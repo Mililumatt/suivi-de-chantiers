@@ -8,59 +8,36 @@ const el = (id)=>document.getElementById(id);
 /* ===============================
    ETAT GLOBAL
 ================================ */
-let state = defaultState();
+window.state = defaultState();
+let state = window.state;
 let dirty = false;
-
 /* ===============================
-   LOAD (PATCH TEMPORAIRE)
+   LOAD (PRODUCTION FINALE)
 ================================ */
 function load(){
 
-  // ==================================================
-  // ⚠️ TEST FORCÉ – À SUPPRIMER APRÈS VALIDATION
-  // ==================================================
-  state = normalizeState({
-    projects: [{
-      id: "TEST",
-      name: "Projet test GitHub Pages",
-      site: "Démo",
-      subproject: ""
-    }],
-    tasks: [{
-      id: "T1",
-      projectId: "TEST",
-      room: "Tâche test",
-      status: "EN COURS",
-      start: "2026-01-01",
-      end: "2026-01-10",
-      owner: "TEST"
-    }],
-    ui: { activeTab: "MASTER", filters: {} }
-  });
-
-  renderAll();
-  clearDirty();
-  return;
-  // ==================================================
-  // FIN TEST FORCÉ
-  // ==================================================
-
-  /* ====== CODE ORIGINAL (NE S’EXÉCUTE PAS POUR LE TEST) ======
-  try{
+  // 1️⃣ État initial local (UI visible immédiatement)
+  try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
+    if (raw) {
       state = normalizeState(JSON.parse(raw));
-    }else{
+    } else {
       state = normalizeState(defaultState());
     }
-  }catch(e){
+  } catch (e) {
     state = normalizeState(defaultState());
   }
+
+  // 2️⃣ Rendu immédiat (même si état vide)
   renderAll();
   clearDirty();
+
+  // 3️⃣ Supabase recharge ensuite l'état réel
   _scheduleSupabaseAutoLoad();
-  =========================================================== */
 }
+
+
+
 
 /* ===============================
    BOOTSTRAP
