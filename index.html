@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Suivi de Chantiers</title>
+
+  <!-- Styles principaux -->
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="print.css" media="print" />
+
+  <!-- Flatpickr (local, compatible GitHub Pages) -->
+  <link rel="stylesheet" href="libs/flatpickr/flatpickr.min.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand" id="brandTitle">Suivi de Chantiers</div>
+      <div class="subtitle" id="brandSub">Tableau maître • Projets • Gantt • Exports locaux</div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnExport">Export CSV</button>
+      <button class="btn btn-primary" id="btnSave">💾 Sauvegarder</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">🗂️</span> Onglets</div>
+        <div id="tabs" class="tabs"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">🔎</span> Filtres (tableau maître)</div>
+        <label class="label">Projet</label>
+        <select class="input" id="filterProject"></select>
+
+        <label class="label">Statut</label>
+        <select class="input" id="filterStatus"></select>
+
+        <label class="label">Recherche</label>
+        <input class="input" id="filterSearch" placeholder="Titre, site, responsable..." />
+
+        <div class="grid2">
+          <div>
+            <label class="label">Début après</label>
+            <input class="input" id="filterStartAfter" type="date" />
+          </div>
+          <div>
+            <label class="label">Fin avant</label>
+            <input class="input" id="filterEndBefore" type="date" />
+          </div>
+        </div>
+
+        <div class="row">
+          <button class="btn btn-ghost"
+            onclick="document.getElementById('filterProject').value='';
+                     document.getElementById('filterStatus').value='';
+                     document.getElementById('filterSearch').value='';
+                     document.getElementById('filterStartAfter').value='';
+                     document.getElementById('filterEndBefore').value='';
+                     renderAll();">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">➕</span> Ajouter</div>
+        <button class="btn btn-primary" id="btnAddProject">+ Nouveau projet</button>
+        <button class="btn btn-primary" id="btnAddTask">+ Nouvelle tâche</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- (contenu inchangé : tableau maître, projets, gantt, etc.) -->
+      <!-- Ton HTML métier est strictement conservé -->
+    </main>
+  </div>
+
+  <!-- Flatpickr -->
+  <script src="libs/flatpickr/flatpickr.min.js"></script>
+  <script src="libs/flatpickr/l10n/fr.js"></script>
+
+  <!-- Supabase (HTTPS CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <!-- App principale -->
+  <script src="app.js"></script>
+
+  <!-- Template impression -->
+  <template id="printTemplate">
+    <div class="print-order">
+      <div class="print-header print-block" id="printHeader">
+        <h1>Suivi de Chantiers</h1>
+        <div class="print-meta" id="printMeta"></div>
+      </div>
+      <div class="legend print-block" id="printLegend"></div>
+    </div>
+  </template>
+</body>
+</html>
