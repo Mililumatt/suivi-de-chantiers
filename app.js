@@ -3,6 +3,8 @@
 
 const el = (id)=>document.getElementById(id);
 const STORAGE_KEY = "suivi_chantiers_state_v1";
+const deepClone = (obj)=> JSON.parse(JSON.stringify(obj));
+
 
 /* =========================================================
    SUPABASE GREFFE MINIMALE (NE TOUCHE PAS A L'UI)
@@ -147,8 +149,6 @@ function _scheduleSupabaseAutoLoad(){
 const uid = ()=> Math.random().toString(16).slice(2,10) + Date.now().toString(16);
 const normId = (v)=> (v===undefined || v===null) ? "" : String(v).trim();
 
-let state = defaultState();
-window.state = state;
 let selectedProjectId = null;
 let selectedTaskId = null;
 /* ===============================
@@ -156,16 +156,17 @@ let selectedTaskId = null;
 ================================ */
 function load(){
 
-  // 1️⃣ Initialisation immédiate depuis l'état embarqué
-  state = normalizeState(defaultState());
-  window.state = state;
+  // Sélectionner automatiquement le premier projet
+  selectedProjectId = state.projects?.[0]?.id || null;
+  selectedTaskId = null;
 
   renderAll();
   clearDirty();
 
-  // 2️⃣ Rechargement Supabase en arrière-plan
   _scheduleSupabaseAutoLoad();
 }
+
+
 
 let taskOrderMap = {};
 let selectedStatusSet = new Set();
@@ -213,7 +214,6 @@ const STATUS_COLORS = {
 const statusColor = (v)=> STATUS_COLORS[(v||"").toUpperCase()] || "#1f2937";
 const statusDot = (v)=> `<span class="icon-dot" style="background:${statusColor(v)};border-color:${statusColor(v)}"></span>`;
 const parseStatuses = (s)=> (s||"").split(",").map(x=>x.trim()).filter(Boolean);
-const deepClone = (obj)=> JSON.parse(JSON.stringify(obj));
 const siteColor = (_site="")=>"transparent";
 const ownerBadge = (o="")=>{
   const k = o.toLowerCase();
@@ -322,6 +322,11 @@ const EMBEDDED_BACKUP = {
 function defaultState(){
   return deepClone(EMBEDDED_BACKUP);
 }
+
+window.state = state;   // ← AJOUTE ÇA
+let selectedProjectId = null;
+let selectedTaskId = null;
+
 
 
 function saveState(){
