@@ -1351,10 +1351,11 @@ function bind(){
   updateSaveButton();
 }
 
-load();
-bind();
-renderAll();
-
+document.addEventListener("DOMContentLoaded", () => {
+  load();
+  bind();
+  renderAll();
+});
 // Préparation impression : cartouche + légende
 function preparePrint(){
   document.body.classList.add("print-mode");
