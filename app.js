@@ -1244,12 +1244,37 @@ function bind(){
   }
   // flatpickr sur les dates, week-ends interdits
   const fpOpts = { dateFormat:"Y-m-d", locale:"fr", disable:[ function(date){ const d=date.getDay(); return d===0 || d===6; } ] };
-  ["t_start","t_end","filterStartAfter","filterEndBefore"].forEach(id=>{
-    const node=el(id);
-    if(window.flatpickr && node){
-      window.flatpickr(node, fpOpts);
+  let fpStart=null, fpEnd=null;
+  if(window.flatpickr){
+    const startNode = el("t_start");
+    const endNode   = el("t_end");
+    if(startNode){
+      fpStart = window.flatpickr(startNode, {...fpOpts,
+        defaultDate: startNode.value || null,
+        onOpen: (_s,_d,inst)=>{ if(startNode.value) inst.jumpToDate(startNode.value); },
+        onChange:(selectedDates, dateStr)=>{
+        if(fpEnd) fpEnd.set("minDate", dateStr || null);
+        if(endNode && dateStr){
+          const startVal = startNode.value;
+          const endVal = endNode.value;
+          if(startVal && (!endVal || unformatDate(endVal) < unformatDate(startVal))){
+            endNode.value = startVal;
+          }
+        }
+      }});
     }
-  });
+    if(endNode){
+      fpEnd = window.flatpickr(endNode, {...fpOpts,
+        defaultDate: endNode.value || startNode?.value || null,
+        minDate: startNode?.value || null,
+        onOpen: (_s,_d,inst)=>{ const target = startNode?.value || endNode.value; if(target) inst.jumpToDate(target); }
+      });
+    }
+    ["filterStartAfter","filterEndBefore"].forEach(id=>{
+      const node=el(id);
+      if(node) window.flatpickr(node, fpOpts);
+    });
+  }
 
   // Repositionnement du menu multiselect en fixed (pour qu'il reste au-dessus)
   const statusMenu = el("t_status_menu");
