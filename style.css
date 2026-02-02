@@ -319,8 +319,8 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   content:attr(data-range);
   position:absolute;
   left:50%;
-  top:100%;
-  transform:translateX(-50%);
+  bottom:100%;
+  transform:translate(-50%,-4px);
   background:#111827;
   color:#fff;
   padding:4px 8px;
@@ -330,7 +330,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   opacity:0;
   pointer-events:none;
   transition:opacity .12s ease;
-  margin-top:4px;
+  margin-bottom:4px;
   box-shadow:0 4px 10px rgba(0,0,0,0.2);
 }
 .week-cell:hover::after{
