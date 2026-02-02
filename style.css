@@ -217,11 +217,14 @@ body{
   background:transparent !important;
 }
 .gantt-table{
+  display:block;
+  max-width:100%;
   overflow-x:auto;
 }
-.gantt-table table{
+.gantt-table .table{
   white-space:nowrap;
-  width:max-content;
+  width:100%;
+  min-width:900px;
 }
 .empty-row{text-align:center;color:var(--muted);}
 
