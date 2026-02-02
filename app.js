@@ -1253,11 +1253,11 @@ function bind(){
   if(window.flatpickr){
     const startNode = el("t_start");
     const endNode   = el("t_end");
-    const today = new Date();
+    const todayIso = new Date().toISOString().slice(0,10);
     if(startNode){
       fpStart = window.flatpickr(startNode, {...fpOpts,
-        defaultDate: startNode.value || today,
-        onOpen: (_s,_d,inst)=>{ inst.jumpToDate(startNode.value || today); },
+        defaultDate: startNode.value || todayIso,
+        onOpen: (_s,_d,inst)=>{ inst.jumpToDate(startNode.value || todayIso); },
         onChange:(selectedDates, dateStr)=>{
         if(fpEnd) fpEnd.set("minDate", dateStr || null);
         if(endNode && dateStr){
@@ -1271,9 +1271,9 @@ function bind(){
     }
     if(endNode){
       fpEnd = window.flatpickr(endNode, {...fpOpts,
-        defaultDate: endNode.value || startNode?.value || today,
+        defaultDate: endNode.value || startNode?.value || todayIso,
         minDate: startNode?.value || null,
-        onOpen: (_s,_d,inst)=>{ const target = startNode?.value || endNode.value || today; inst.jumpToDate(target); }
+        onOpen: (_s,_d,inst)=>{ const target = startNode?.value || endNode.value || todayIso; inst.jumpToDate(target); }
       });
     }
     ["filterStartAfter","filterEndBefore"].forEach(id=>{
