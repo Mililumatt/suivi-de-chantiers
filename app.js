@@ -307,12 +307,8 @@ function defaultState(){
 }
 
 function load(){
-  const skipFileFetch = (window.location && window.location.protocol === "file:");
-  const backupPromise = skipFileFetch
-    ? Promise.reject("skip-file-fetch")
-    : fetch(`suivi_chantiers_backup.json?v=${Date.now()}`, {cache:"no-store"});
   // 1) tenter le fichier de backup du projet (persistant disque)
-  backupPromise
+  fetch(`suivi_chantiers_backup.json?v=${Date.now()}`, {cache:"no-store"})
     .then(resp=> resp.ok ? resp.json() : null)
     .then(data=>{
       if(data){
@@ -542,7 +538,7 @@ function renderGantt(projectId){
   });
 
   let html="<div class='tablewrap gantt-table'><table class='table'>";
-  html+="<thead><tr><th style='width:190px'>Tâche</th><th style='width:70px'>Type</th>";
+  html+="<thead><tr><th style='width:190px'>Tâche</th><th style='width:70px'>Statut</th>";
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
@@ -558,13 +554,6 @@ function renderGantt(projectId){
     if(!lanesMap.has(key)) lanesMap.set(key,{title:key,tasks:[]});
     lanesMap.get(key).tasks.push(t);
   });
-  lanesMap.forEach(l=> l.tasks.sort((a,b)=>{
-    const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
-    if(sa!==sb) return sa-sb;
-    const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
-    if(ea!==eb) return ea-eb;
-    return (a.roomNumber||"").localeCompare(b.roomNumber||"");
-  }));
   const lanes = Array.from(lanesMap.values()).sort((a,b)=>{
     const ma = Math.min(...a.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
     const mb = Math.min(...b.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
@@ -574,13 +563,6 @@ function renderGantt(projectId){
     if(oa!==ob) return oa-ob;
     return a.title.localeCompare(b.title);
   });
-  lanes.forEach(l=> l.tasks.sort((a,b)=>{
-    const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
-    if(sa!==sb) return sa-sb;
-    const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
-    if(ea!==eb) return ea-eb;
-    return (a.roomNumber||"").localeCompare(b.roomNumber||"");
-  }));
 
   lanes.forEach(lane=>{
     const firstTask = lane.tasks[0];
@@ -637,7 +619,6 @@ function renderGantt(projectId){
 
   html+="</tbody></table></div>";
   wrap.innerHTML=html;
-  wrap.querySelectorAll("th").forEach(th=>{ if(th.textContent.trim()==="Statut") th.textContent="Type"; });
   wrap.querySelectorAll(".bar-click")?.forEach(bar=>{
     bar.onclick=()=>{
       const taskId = bar.dataset.task;
@@ -722,13 +703,11 @@ function renderMasterGantt(){
   });
   html+="</tr></thead><tbody>";
 
-  // regrouper par projet (ignore les sous-projets dans le titre)
+  // regrouper par titre pour n'avoir qu'une ligne par sous-projet
   const lanesMap = new Map();
   tasks.forEach(t=>{
-    const proj = state.projects.find(p=>p.id===t.projectId);
-    const key = (proj?.name || "Sans projet").trim().toLowerCase() || "no-project";
-    const title = proj ? (proj.name || "Sans projet") : "Sans projet";
-    if(!lanesMap.has(key)) lanesMap.set(key,{title, tasks:[]});
+    const key = `${taskTitle(t)}|||${t.projectId}`;
+    if(!lanesMap.has(key)) lanesMap.set(key,{title:taskTitle(t), tasks:[]});
     lanesMap.get(key).tasks.push(t);
   });
   const lanes = Array.from(lanesMap.values()).sort((a,b)=>{
@@ -794,7 +773,6 @@ function renderMasterGantt(){
 
   html+="</tbody></table></div>";
   wrap.innerHTML=html;
-  wrap.querySelectorAll("th").forEach(th=>{ if(th.textContent.trim()==="Statut") th.textContent="Type"; });
   wrap.querySelectorAll(".bar-click")?.forEach(bar=>{
     bar.onclick=()=>{
       const taskId = bar.dataset.task;
@@ -1151,8 +1129,6 @@ function renderAll(){
 
 function bind(){
   buildStatusMenu();
-  const statusLabelNode = el("t_status_wrap")?.previousElementSibling;
-  if(statusLabelNode) statusLabelNode.textContent = "Type / Corps d'état (multi-sélection)";
   setStatusSelection("");
   el("t_status_display")?.addEventListener("click",(e)=>{ e.stopPropagation(); toggleStatusMenu(true); });
   document.addEventListener("click",(e)=>{
@@ -1243,11 +1219,6 @@ function bind(){
     t.owner      = el("t_owner").value;
     t.start      = unformatDate(el("t_start").value);
     t.end        = unformatDate(el("t_end").value);
-    if(t.end && t.start && t.end < t.start){
-      t.end = t.start;
-      el("t_end").value = formatDate(t.start);
-      console.warn("Date de fin ajustée à la date de début pour éviter une fin antérieure.");
-    }
     t.status     = Array.from(selectedStatusSet).join(",");
     markDirty();
     renderProject();
@@ -1268,48 +1239,13 @@ function bind(){
     brandTitle.innerHTML = `Suivi de Chantiers <span class="copyright">© Sébastien DUC</span>`;
   }
   // flatpickr sur les dates, week-ends interdits
-  const fpOpts = {
-    dateFormat:"Y-m-d",
-    altInput:true,
-    altFormat:"d/m/Y",
-    allowInput:true,
-    locale:"fr",
-    disable:[ function(date){ const d=date.getDay(); return d===0 || d===6; } ]
-  };
-  let fpStart=null, fpEnd=null;
-  if(window.flatpickr){
-    const startNode = el("t_start");
-    const endNode   = el("t_end");
-    const todayIso = new Date().toISOString().slice(0,10);
-    const startIso = startNode?.value ? unformatDate(startNode.value) : "";
-    const endIso   = endNode?.value ? unformatDate(endNode.value) : "";
-    if(startNode){
-      fpStart = window.flatpickr(startNode, {...fpOpts,
-        defaultDate: startIso || todayIso,
-        onOpen: (_s,_d,inst)=>{ inst.jumpToDate(startIso || todayIso); },
-        onChange:(selectedDates, dateStr)=>{
-        if(fpEnd) fpEnd.set("minDate", dateStr || null);
-        if(endNode && dateStr){
-          const startVal = startNode.value;
-          const endVal = endNode.value;
-          if(startVal && (!endVal || unformatDate(endVal) < unformatDate(startVal))){
-            endNode.value = startVal;
-          }
-        }
-      }});
+  const fpOpts = { dateFormat:"Y-m-d", locale:"fr", disable:[ function(date){ const d=date.getDay(); return d===0 || d===6; } ] };
+  ["t_start","t_end","filterStartAfter","filterEndBefore"].forEach(id=>{
+    const node=el(id);
+    if(window.flatpickr && node){
+      window.flatpickr(node, fpOpts);
     }
-    if(endNode){
-      fpEnd = window.flatpickr(endNode, {...fpOpts,
-        defaultDate: endIso || startIso || todayIso,
-        minDate: startIso || null,
-        onOpen: (_s,_d,inst)=>{ const target = startIso || endIso || todayIso; inst.jumpToDate(target); }
-      });
-    }
-    ["filterStartAfter","filterEndBefore"].forEach(id=>{
-      const node=el(id);
-      if(node) window.flatpickr(node, fpOpts);
-    });
-  }
+  });
 
   // Repositionnement du menu multiselect en fixed (pour qu'il reste au-dessus)
   const statusMenu = el("t_status_menu");
