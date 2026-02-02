@@ -548,7 +548,7 @@ function renderGantt(projectId){
     const wEnd=endOfWorkWeek(w);
     const range=`${w.toLocaleDateString("fr-FR",{day:"2-digit"})}-${wEnd.toLocaleDateString("fr-FR",{day:"2-digit"})}/${wEnd.toLocaleDateString("fr-FR",{month:"2-digit",year:"2-digit"})}`;
     const weekLabel = `S${String(info.week).padStart(2,"0")}`;
-    html+=`<th style='width:72px;color:#111827' title="${weekLabel} ${range}">${weekLabel}</th>`;
+    html+=`<th class="week-cell" data-range="${range}" style='width:72px;color:#111827'>${weekLabel}</th>`;
   });
   html+="</tr></thead><tbody>";
 
@@ -716,7 +716,7 @@ function renderMasterGantt(){
     const wEnd=endOfWorkWeek(w);
     const range=`${w.toLocaleDateString("fr-FR",{day:"2-digit"})}-${wEnd.toLocaleDateString("fr-FR",{day:"2-digit"})}/${wEnd.toLocaleDateString("fr-FR",{month:"2-digit",year:"2-digit"})}`;
     const weekLabel = `S${String(info.week).padStart(2,"0")}`;
-    html+=`<th style='width:72px;color:#111827' title="${weekLabel} ${range}">${weekLabel}</th>`;
+    html+=`<th class="week-cell" data-range="${range}" style='width:72px;color:#111827'>${weekLabel}</th>`;
   });
   html+="</tr></thead><tbody>";
 

@@ -314,6 +314,28 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 
 .gantt-empty{padding:10px;color:var(--muted);font-size:12px;}
 .gantt-week{font-weight:500;color:#64748b;}
+.week-cell{position:relative;}
+.week-cell::after{
+  content:attr(data-range);
+  position:absolute;
+  left:50%;
+  top:100%;
+  transform:translateX(-50%);
+  background:#111827;
+  color:#fff;
+  padding:4px 8px;
+  border-radius:8px;
+  font-size:10px;
+  white-space:nowrap;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .12s ease;
+  margin-top:4px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
+}
+.week-cell:hover::after{
+  opacity:1;
+}
 .gantt-table .table td{padding:4px 6px;line-height:1.1;}
 .gantt-bar{height:12px;border-radius:10px;border:1px solid rgba(0,0,0,.22);position:relative;overflow:hidden;}
 .gantt-bar .gantt-days{
