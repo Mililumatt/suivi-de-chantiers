@@ -546,7 +546,7 @@ function renderGantt(projectId){
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
-    const range=`${w.toLocaleDateString("fr-FR",{day:"2-digit"})}-${wEnd.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"2-digit"})}`;
+    const range=`${w.toLocaleDateString("fr-FR",{day:"2-digit"})}-${wEnd.toLocaleDateString("fr-FR",{day:"2-digit"})}/${wEnd.toLocaleDateString("fr-FR",{month:"2-digit",year:"2-digit"})}`;
     html+=`<th style='width:110px;color:#111827'>S${String(info.week).padStart(2,"0")}<br><span class="gantt-week" style="color:#111827">${range}</span></th>`;
   });
   html+="</tr></thead><tbody>";
@@ -713,7 +713,7 @@ function renderMasterGantt(){
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
-    const range=`${w.toLocaleDateString("fr-FR",{day:"2-digit"})}-${wEnd.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"2-digit"})}`;
+    const range=`${w.toLocaleDateString("fr-FR",{day:"2-digit"})}-${wEnd.toLocaleDateString("fr-FR",{day:"2-digit"})}/${wEnd.toLocaleDateString("fr-FR",{month:"2-digit",year:"2-digit"})}`;
     html+=`<th style='width:110px;color:#111827'>S${String(info.week).padStart(2,"0")}<br><span class="gantt-week" style="color:#111827">${range}</span></th>`;
   });
   html+="</tr></thead><tbody>";
