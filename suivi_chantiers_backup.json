@@ -1,0 +1,68 @@
+{
+  "projects": [
+    {
+      "id": "3e86100919c04fb8456",
+      "name": "Bureau Pastorale",
+      "site": "CDM",
+      "subproject": "Rénovation",
+      "constraints": ""
+    },
+    {
+      "id": "0c644af019c05700845",
+      "name": "Internat Saint Gervais",
+      "site": "LGT",
+      "subproject": "Rénovation CH 011",
+      "constraints": ""
+    },
+    {
+      "id": "83fac1eb19c15d95804",
+      "name": "Salle des profs",
+      "site": "CDM",
+      "subproject": "Rénovation",
+      "constraints": ""
+    },
+    {
+      "id": "2dd392f619c189a3087",
+      "name": "Nouveau projet",
+      "site": "",
+      "subproject": "",
+      "constraints": ""
+    }
+  ],
+  "tasks": [
+    {
+      "id": "c807465d19c05012673",
+      "end": "2026-02-27",
+      "notes": "",
+      "owner": "Équipe interne",
+      "start": "2026-02-02",
+      "status": "ELECTRICITE,PEINTURE,MOBILIER,AMENAGEMENTS",
+      "projectId": "3e86100919c04fb8456",
+      "roomNumber": "Rénovation"
+    },
+    {
+      "id": "f490f0e019c0571bee2",
+      "end": "2026-02-14",
+      "notes": "",
+      "owner": "Équipe interne",
+      "start": "2026-02-02",
+      "status": "PEINTURE,TDV,AMENAGEMENTS",
+      "projectId": "0c644af019c05700845",
+      "roomNumber": "Rénovation CH 011"
+    },
+    {
+      "id": "840b3cb519c05732884",
+      "end": "2026-02-28",
+      "notes": "",
+      "owner": "Équipe interne",
+      "start": "2026-02-16",
+      "status": "PEINTURE,AMENAGEMENTS,TDV",
+      "projectId": "0c644af019c05700845",
+      "roomNumber": "Rénovation CH 010"
+    }
+  ],
+  "ui": {
+    "filters": {},
+    "activeTab": "3e86100919c04fb8456"
+  }
+}
