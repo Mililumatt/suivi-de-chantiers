@@ -712,7 +712,7 @@ function renderMasterGantt(){
   tasks.forEach(t=>{
     const proj = state.projects.find(p=>p.id===t.projectId);
     const key = proj?.id || "no-project";
-    const title = proj?.name || "Sans projet";
+    const title = proj ? `${proj.name||"Sans projet"}${proj.subproject ? " / "+proj.subproject : ""}` : "Sans projet";
     if(!lanesMap.has(key)) lanesMap.set(key,{title, tasks:[]});
     lanesMap.get(key).tasks.push(t);
   });
