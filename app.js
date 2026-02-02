@@ -707,11 +707,13 @@ function renderMasterGantt(){
   });
   html+="</tr></thead><tbody>";
 
-  // regrouper par titre pour n'avoir qu'une ligne par sous-projet
+  // regrouper par projet (plus par sous-projet)
   const lanesMap = new Map();
   tasks.forEach(t=>{
-    const key = `${taskTitle(t)}|||${t.projectId}`;
-    if(!lanesMap.has(key)) lanesMap.set(key,{title:taskTitle(t), tasks:[]});
+    const proj = state.projects.find(p=>p.id===t.projectId);
+    const key = proj?.id || "no-project";
+    const title = proj?.name || "Sans projet";
+    if(!lanesMap.has(key)) lanesMap.set(key,{title, tasks:[]});
     lanesMap.get(key).tasks.push(t);
   });
   const lanes = Array.from(lanesMap.values()).sort((a,b)=>{
