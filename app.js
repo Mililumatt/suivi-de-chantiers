@@ -1248,16 +1248,25 @@ function bind(){
     brandTitle.innerHTML = `Suivi de Chantiers <span class="copyright">© Sébastien DUC</span>`;
   }
   // flatpickr sur les dates, week-ends interdits
-  const fpOpts = { dateFormat:"Y-m-d", locale:"fr", disable:[ function(date){ const d=date.getDay(); return d===0 || d===6; } ] };
+  const fpOpts = {
+    dateFormat:"Y-m-d",
+    altInput:true,
+    altFormat:"d/m/Y",
+    allowInput:true,
+    locale:"fr",
+    disable:[ function(date){ const d=date.getDay(); return d===0 || d===6; } ]
+  };
   let fpStart=null, fpEnd=null;
   if(window.flatpickr){
     const startNode = el("t_start");
     const endNode   = el("t_end");
     const todayIso = new Date().toISOString().slice(0,10);
+    const startIso = startNode?.value ? unformatDate(startNode.value) : "";
+    const endIso   = endNode?.value ? unformatDate(endNode.value) : "";
     if(startNode){
       fpStart = window.flatpickr(startNode, {...fpOpts,
-        defaultDate: startNode.value || todayIso,
-        onOpen: (_s,_d,inst)=>{ inst.jumpToDate(startNode.value || todayIso); },
+        defaultDate: startIso || todayIso,
+        onOpen: (_s,_d,inst)=>{ inst.jumpToDate(startIso || todayIso); },
         onChange:(selectedDates, dateStr)=>{
         if(fpEnd) fpEnd.set("minDate", dateStr || null);
         if(endNode && dateStr){
@@ -1271,9 +1280,9 @@ function bind(){
     }
     if(endNode){
       fpEnd = window.flatpickr(endNode, {...fpOpts,
-        defaultDate: endNode.value || startNode?.value || todayIso,
-        minDate: startNode?.value || null,
-        onOpen: (_s,_d,inst)=>{ const target = startNode?.value || endNode.value || todayIso; inst.jumpToDate(target); }
+        defaultDate: endIso || startIso || todayIso,
+        minDate: startIso || null,
+        onOpen: (_s,_d,inst)=>{ const target = startIso || endIso || todayIso; inst.jumpToDate(target); }
       });
     }
     ["filterStartAfter","filterEndBefore"].forEach(id=>{
