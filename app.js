@@ -1223,6 +1223,11 @@ function bind(){
     t.owner      = el("t_owner").value;
     t.start      = unformatDate(el("t_start").value);
     t.end        = unformatDate(el("t_end").value);
+    if(t.end && t.start && t.end < t.start){
+      t.end = t.start;
+      el("t_end").value = formatDate(t.start);
+      console.warn("Date de fin ajustée à la date de début pour éviter une fin antérieure.");
+    }
     t.status     = Array.from(selectedStatusSet).join(",");
     markDirty();
     renderProject();
