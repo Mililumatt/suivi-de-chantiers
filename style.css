@@ -218,10 +218,13 @@ body{
 }
 .gantt-table{
   overflow-x:auto;
+  width:100%;
+  max-width:100%;
 }
 .gantt-table table{
   white-space:nowrap;
-  min-width:100%;
+  width:max-content;
+  min-width:720px;
 }
 .empty-row{text-align:center;color:var(--muted);}
 
