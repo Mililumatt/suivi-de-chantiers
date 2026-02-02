@@ -216,6 +216,13 @@ body{
 .gantt-table table tbody tr td{
   background:transparent !important;
 }
+.gantt-table{
+  overflow-x:auto;
+}
+.gantt-table table{
+  white-space:nowrap;
+  min-width:100%;
+}
 .empty-row{text-align:center;color:var(--muted);}
 
 .card{
