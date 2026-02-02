@@ -1149,6 +1149,8 @@ function renderAll(){
 
 function bind(){
   buildStatusMenu();
+  const statusLabelNode = el("t_status_wrap")?.previousElementSibling;
+  if(statusLabelNode) statusLabelNode.textContent = "Type / Corps d'état (multi-sélection)";
   setStatusSelection("");
   el("t_status_display")?.addEventListener("click",(e)=>{ e.stopPropagation(); toggleStatusMenu(true); });
   document.addEventListener("click",(e)=>{
