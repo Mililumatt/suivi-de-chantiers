@@ -216,16 +216,6 @@ body{
 .gantt-table table tbody tr td{
   background:transparent !important;
 }
-.gantt-table{
-  overflow-x:auto;
-  width:100%;
-  max-width:100%;
-}
-.gantt-table table{
-  white-space:nowrap;
-  width:100%;
-  min-width:900px;
-}
 .empty-row{text-align:center;color:var(--muted);}
 
 .card{
@@ -516,10 +506,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   box-shadow:0 10px 22px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.5);
   position:relative;
   z-index:0;
-  width:100%;
-  max-width:100%;
-  overflow-x:auto;
-  overflow-y:visible;
+  overflow:visible;
 }
 .table th{
   background:linear-gradient(180deg, rgba(232,231,228,0.94) 0%, rgba(214,211,206,0.9) 100%);
