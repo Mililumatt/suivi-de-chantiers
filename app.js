@@ -1253,10 +1253,11 @@ function bind(){
   if(window.flatpickr){
     const startNode = el("t_start");
     const endNode   = el("t_end");
+    const today = new Date();
     if(startNode){
       fpStart = window.flatpickr(startNode, {...fpOpts,
-        defaultDate: startNode.value || null,
-        onOpen: (_s,_d,inst)=>{ if(startNode.value) inst.jumpToDate(startNode.value); },
+        defaultDate: startNode.value || today,
+        onOpen: (_s,_d,inst)=>{ inst.jumpToDate(startNode.value || today); },
         onChange:(selectedDates, dateStr)=>{
         if(fpEnd) fpEnd.set("minDate", dateStr || null);
         if(endNode && dateStr){
@@ -1270,9 +1271,9 @@ function bind(){
     }
     if(endNode){
       fpEnd = window.flatpickr(endNode, {...fpOpts,
-        defaultDate: endNode.value || startNode?.value || null,
+        defaultDate: endNode.value || startNode?.value || today,
         minDate: startNode?.value || null,
-        onOpen: (_s,_d,inst)=>{ const target = startNode?.value || endNode.value; if(target) inst.jumpToDate(target); }
+        onOpen: (_s,_d,inst)=>{ const target = startNode?.value || endNode.value || today; inst.jumpToDate(target); }
       });
     }
     ["filterStartAfter","filterEndBefore"].forEach(id=>{
