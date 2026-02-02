@@ -707,11 +707,11 @@ function renderMasterGantt(){
   });
   html+="</tr></thead><tbody>";
 
-  // regrouper par projet (plus par sous-projet)
+  // regrouper par projet (fusionne tous les sous-projets du même nom de projet)
   const lanesMap = new Map();
   tasks.forEach(t=>{
     const proj = state.projects.find(p=>p.id===t.projectId);
-    const key = proj?.id || "no-project";
+    const key = (proj?.name || "Sans projet").trim().toLowerCase() || "no-project";
     const title = proj ? `${proj.name||"Sans projet"}${proj.subproject ? " / "+proj.subproject : ""}` : "Sans projet";
     if(!lanesMap.has(key)) lanesMap.set(key,{title, tasks:[]});
     lanesMap.get(key).tasks.push(t);
