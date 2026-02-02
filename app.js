@@ -558,6 +558,13 @@ function renderGantt(projectId){
     if(!lanesMap.has(key)) lanesMap.set(key,{title:key,tasks:[]});
     lanesMap.get(key).tasks.push(t);
   });
+  lanesMap.forEach(l=> l.tasks.sort((a,b)=>{
+    const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
+    if(sa!==sb) return sa-sb;
+    const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
+    if(ea!==eb) return ea-eb;
+    return (a.roomNumber||"").localeCompare(b.roomNumber||"");
+  }));
   const lanes = Array.from(lanesMap.values()).sort((a,b)=>{
     const ma = Math.min(...a.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
     const mb = Math.min(...b.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
@@ -567,6 +574,13 @@ function renderGantt(projectId){
     if(oa!==ob) return oa-ob;
     return a.title.localeCompare(b.title);
   });
+  lanes.forEach(l=> l.tasks.sort((a,b)=>{
+    const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
+    if(sa!==sb) return sa-sb;
+    const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
+    if(ea!==eb) return ea-eb;
+    return (a.roomNumber||"").localeCompare(b.roomNumber||"");
+  }));
 
   lanes.forEach(lane=>{
     const firstTask = lane.tasks[0];
