@@ -2,9 +2,9 @@
   "projects": [
     {
       "id": "3e86100919c04fb8456",
-      "name": "Bureau Pastorale",
+      "name": "Bureau Pastorale Rénovation",
       "site": "CDM",
-      "subproject": "Rénovation",
+      "subproject": "",
       "constraints": ""
     },
     {
@@ -22,7 +22,7 @@
       "constraints": ""
     },
     {
-      "id": "2dd392f619c189a3087",
+      "id": "d157ceee19c1dbdb6ee",
       "name": "Nouveau projet",
       "site": "",
       "subproject": "",
@@ -32,13 +32,13 @@
   "tasks": [
     {
       "id": "c807465d19c05012673",
-      "end": "2026-02-27",
+      "end": "2026-04-08",
       "notes": "",
-      "owner": "Équipe interne",
-      "start": "2026-02-02",
-      "status": "ELECTRICITE,PEINTURE,MOBILIER,AMENAGEMENTS",
+      "owner": "Prestataire externe",
+      "start": "2026-04-08",
+      "status": "HUIS_SER",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Rénovation"
+      "roomNumber": "Finitions Chassis fixes"
     },
     {
       "id": "f490f0e019c0571bee2",
@@ -59,6 +59,33 @@
       "status": "PEINTURE,AMENAGEMENTS,TDV",
       "projectId": "0c644af019c05700845",
       "roomNumber": "Rénovation CH 010"
+    },
+    {
+      "id": "057fbc5519c1df27433",
+      "end": "2026-02-13",
+      "owner": "Équipe interne",
+      "start": "2026-02-12",
+      "status": "ELECTRICITE",
+      "projectId": "3e86100919c04fb8456",
+      "roomNumber": "Dépose/Repose CF/Cf"
+    },
+    {
+      "id": "b0fc5a2f19c1e8067ab",
+      "end": "2026-04-06",
+      "owner": "Prestataire externe",
+      "start": "2026-04-06",
+      "status": "HUIS_SER",
+      "projectId": "3e86100919c04fb8456",
+      "roomNumber": "Pose Chassis fixes"
+    },
+    {
+      "id": "aa4f131519c1e82440b",
+      "end": "2026-02-20",
+      "owner": "Équipe interne",
+      "start": "2026-02-16",
+      "status": "ELECTRICITE",
+      "projectId": "3e86100919c04fb8456",
+      "roomNumber": "Finitions Chassis fixes"
     }
   ],
   "ui": {

@@ -307,8 +307,12 @@ function defaultState(){
 }
 
 function load(){
+  const skipFileFetch = (window.location && window.location.protocol === "file:");
+  const backupPromise = skipFileFetch
+    ? Promise.reject("skip-file-fetch")
+    : fetch(`suivi_chantiers_backup.json?v=${Date.now()}`, {cache:"no-store"});
   // 1) tenter le fichier de backup du projet (persistant disque)
-  fetch(`suivi_chantiers_backup.json?v=${Date.now()}`, {cache:"no-store"})
+  backupPromise
     .then(resp=> resp.ok ? resp.json() : null)
     .then(data=>{
       if(data){
@@ -550,8 +554,10 @@ function renderGantt(projectId){
   // Regrouper par titre : une seule ligne par tâche/ sous-projet
   const lanesMap = new Map();
   tasks.forEach(t=>{
-    const key = taskTitle(t);
-    if(!lanesMap.has(key)) lanesMap.set(key,{title:key,tasks:[]});
+    const proj = state.projects.find(p=>p.id===t.projectId);
+    const key = (proj?.name || "Sans projet").trim().toLowerCase() || "no-project";
+    const title = proj ? (proj.name || "Sans projet") : "Sans projet";
+    if(!lanesMap.has(key)) lanesMap.set(key,{title,tasks:[]});
     lanesMap.get(key).tasks.push(t);
   });
   const lanes = Array.from(lanesMap.values()).sort((a,b)=>{
@@ -562,6 +568,15 @@ function renderGantt(projectId){
     const ob = Math.min(...b.tasks.map(t=>taskOrderMap[t.id]||9999));
     if(oa!==ob) return oa-ob;
     return a.title.localeCompare(b.title);
+  });
+  lanes.forEach(l=>{
+    l.tasks.sort((a,b)=>{
+      const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
+      if(sa!==sb) return sa-sb;
+      const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
+      if(ea!==eb) return ea-eb;
+      return (a.roomNumber||"").localeCompare(b.roomNumber||"");
+    });
   });
 
   lanes.forEach(lane=>{
@@ -703,11 +718,13 @@ function renderMasterGantt(){
   });
   html+="</tr></thead><tbody>";
 
-  // regrouper par titre pour n'avoir qu'une ligne par sous-projet
+  // regrouper par projet (fusion sous-projets)
   const lanesMap = new Map();
   tasks.forEach(t=>{
-    const key = `${taskTitle(t)}|||${t.projectId}`;
-    if(!lanesMap.has(key)) lanesMap.set(key,{title:taskTitle(t), tasks:[]});
+    const proj = state.projects.find(p=>p.id===t.projectId);
+    const key = (proj?.name || "Sans projet").trim().toLowerCase() || "no-project";
+    const title = proj ? (proj.name || "Sans projet") : "Sans projet";
+    if(!lanesMap.has(key)) lanesMap.set(key,{title: title, tasks:[]});
     lanesMap.get(key).tasks.push(t);
   });
   const lanes = Array.from(lanesMap.values()).sort((a,b)=>{
@@ -719,6 +736,13 @@ function renderMasterGantt(){
     if(oa!==ob) return oa-ob;
     return a.title.localeCompare(b.title);
   });
+  lanes.forEach(l=> l.tasks.sort((a,b)=>{
+    const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
+    if(sa!==sb) return sa-sb;
+    const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
+    if(ea!==eb) return ea-eb;
+    return (a.roomNumber||"").localeCompare(b.roomNumber||"");
+  }));
 
   lanes.forEach(lane=>{
     const firstTask = lane.tasks[0];
@@ -1219,6 +1243,11 @@ function bind(){
     t.owner      = el("t_owner").value;
     t.start      = unformatDate(el("t_start").value);
     t.end        = unformatDate(el("t_end").value);
+    if(t.end && t.start && t.end < t.start){
+      t.end = t.start;
+      el("t_end").value = formatDate(t.start);
+      console.warn("Date de fin ajustée à la date de début pour éviter une fin antérieure.");
+    }
     t.status     = Array.from(selectedStatusSet).join(",");
     markDirty();
     renderProject();
@@ -1239,13 +1268,49 @@ function bind(){
     brandTitle.innerHTML = `Suivi de Chantiers <span class="copyright">© Sébastien DUC</span>`;
   }
   // flatpickr sur les dates, week-ends interdits
-  const fpOpts = { dateFormat:"Y-m-d", locale:"fr", disable:[ function(date){ const d=date.getDay(); return d===0 || d===6; } ] };
-  ["t_start","t_end","filterStartAfter","filterEndBefore"].forEach(id=>{
-    const node=el(id);
-    if(window.flatpickr && node){
-      window.flatpickr(node, fpOpts);
+  const fpOpts = {
+    dateFormat:"Y-m-d",
+    altInput:true,
+    altFormat:"d/m/Y",
+    allowInput:true,
+    locale:"fr",
+    disable:[ function(date){ const d=date.getDay(); return d===0 || d===6; } ]
+  };
+  let fpStart=null, fpEnd=null;
+  if(window.flatpickr){
+    const startNode = el("t_start");
+    const endNode   = el("t_end");
+    const todayIso = new Date().toISOString().slice(0,10);
+    const startIso = startNode?.value ? unformatDate(startNode.value) : "";
+    const endIso   = endNode?.value ? unformatDate(endNode.value) : "";
+    if(startNode){
+      fpStart = window.flatpickr(startNode, {...fpOpts,
+        defaultDate: startIso || todayIso,
+        onOpen: (_s,_d,inst)=>{ inst.jumpToDate(startIso || todayIso); },
+        onChange:(selectedDates, dateStr)=>{
+          if(fpEnd) fpEnd.set("minDate", dateStr || null);
+          if(endNode && dateStr){
+            const startVal = startNode.value;
+            const endVal = endNode.value;
+            if(startVal && (!endVal || unformatDate(endVal) < unformatDate(startVal))){
+              endNode.value = startVal;
+            }
+          }
+        }
+      });
     }
-  });
+    if(endNode){
+      fpEnd = window.flatpickr(endNode, {...fpOpts,
+        defaultDate: endIso || startIso || todayIso,
+        minDate: startIso || null,
+        onOpen: (_s,_d,inst)=>{ const target = startIso || endIso || todayIso; inst.jumpToDate(target); }
+      });
+    }
+    ["filterStartAfter","filterEndBefore"].forEach(id=>{
+      const node=el(id);
+      if(node) window.flatpickr(node, fpOpts);
+    });
+  }
 
   // Repositionnement du menu multiselect en fixed (pour qu'il reste au-dessus)
   const statusMenu = el("t_status_menu");
