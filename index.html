@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Suivi de Chantiers</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="node_modules/flatpickr/dist/flatpickr.min.css" onerror="this.href='https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css';" />
+  <link rel="stylesheet" href="print.css" media="print" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand" id="brandTitle">Suivi de Chantiers</div>
+      <div class="subtitle" id="brandSub">Tableau maître • Projets • Gantt • Exports locaux</div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnExport">Export CSV</button>
+      <button class="btn btn-primary" id="btnSave">💾 Sauvegarder</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">🗂️</span> Onglets</div>
+        <div id="tabs" class="tabs"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">🔎</span> Filtres (tableau maître)</div>
+        <label class="label">Projet</label>
+        <select class="input" id="filterProject"></select>
+
+        <label class="label">Statut</label>
+        <select class="input" id="filterStatus"></select>
+
+        <label class="label">Recherche</label>
+        <input class="input" id="filterSearch" placeholder="Titre, site, responsable..." />
+
+        <div class="grid2">
+          <div>
+            <label class="label">Début après</label>
+            <input class="input" id="filterStartAfter" type="date" placeholder="jj/mm/aaaa" />
+          </div>
+          <div>
+            <label class="label">Fin avant</label>
+            <input class="input" id="filterEndBefore" type="date" placeholder="jj/mm/aaaa" />
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="document.getElementById('filterProject').value='';document.getElementById('filterStatus').value='';document.getElementById('filterSearch').value='';document.getElementById('filterStartAfter').value='';document.getElementById('filterEndBefore').value='';renderAll();">Réinitialiser</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="section-title-icon">➕</span> Ajouter</div>
+        <button class="btn btn-primary" id="btnAddProject">+ Nouveau projet</button>
+        <button class="btn btn-primary" id="btnAddTask">+ Nouvelle tâche</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="panel" id="viewMaster">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title"><span class="panel-title-icon">📊</span> Tableau maître</div>
+            <div class="panel-sub">Toutes les tâches • clic = édition</div>
+            <div class="panel-metrics" id="masterMetrics"></div>
+          </div>
+          <div class="row" style="align-items:center;gap:8px;">
+            <button class="btn" id="btnExportMaster">Export PDF</button>
+          </div>
+        </div>
+        <div id="kpis" class="kpis"></div>
+        <div class="panel-controls" style="margin-bottom:6px;">
+          <span class="filters-indicator" id="filtersBadge">Tri/filtre actif</span>
+          <button class="btn btn-ghost" id="btnResetSortMaster">Réinitialiser tri</button>
+        </div>
+        <div class="tablewrap">
+          <table class="table" id="masterTable">
+              <thead>
+                <tr>
+                <th data-sort="project">Projet</th>
+                <th data-sort="task">Tâche</th>
+                <th data-sort="status">Statut</th>
+                <th data-sort="start">Début</th>
+                <th data-sort="end">Fin</th>
+                <th data-sort="owner">Responsable</th>
+                <th data-sort="duration">Durée (jours)</th>
+              </tr>
+              </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">Gantt global (toutes tâches datées)</div>
+          <div id="masterGantt"></div>
+        </div>
+      </section>
+
+      <section class="panel hidden" id="viewProject">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title" id="projectTitle"><span class="panel-title-icon">🏗️</span> Projet</div>
+            <div class="panel-sub" id="projectSub">Détails • Gantt</div>
+            <div class="panel-metrics" id="projectMetrics"></div>
+            <div class="panel-live" id="projectLive"></div>
+          </div>
+          <div class="row">
+            <button class="btn btn-ghost" id="btnBack">← Retour</button>
+            <button class="btn" id="btnProjectExport">Export projet</button>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <div class="card-title"><span class="card-title-icon">📝</span> Infos projet</div>
+            <label class="label">Nom</label>
+            <input class="input" id="p_name" />
+            <label class="label">Sous-projet</label>
+            <input class="input" id="p_subproject" placeholder="ex: Phase 1, Bâtiment B, Étages 2-3" />
+            <label class="label">Site / Zone</label>
+            <input class="input" id="p_site" />
+            <label class="label">Contraintes clés</label>
+            <input class="input" id="p_constraints" />
+              <!-- Dates de contraintes retirées -->
+            <div class="row">
+              <button class="btn btn-primary" id="btnSaveProject">Enregistrer projet</button>
+              <button class="btn btn-danger" id="btnDeleteProject">Supprimer projet</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="card-title-icon">🛠️</span> Édition tâche <span class="num-badge" id="t_num_badge" style="margin-left:8px; display:none;"></span></div>
+            <label class="label">Description (facultatif)</label>
+            <input class="input" id="t_room" placeholder="ex: Chambre 11, Local élec, Couloir A" />
+
+            <label class="label">Statuts / Corps d'état (multi-sélection)</label>
+            <div class="multiselect" id="t_status_wrap">
+              <div class="multiselect-display" id="t_status_display">Sélectionner…</div>
+              <div class="multiselect-menu hidden" id="t_status_menu"></div>
+            </div>
+
+            <label class="label">Intervenants (équipe interne / prestataire externe / mixte)</label>
+            <select class="input" id="t_owner">
+              <option value="">— Choisir —</option>
+              <option value="Équipe interne">Équipe interne</option>
+              <option value="Prestataire externe">Prestataire externe</option>
+              <option value="Interne + Externe">Interne + Externe</option>
+            </select>
+
+            <div class="grid2">
+              <div>
+                <label class="label">Début</label>
+                <input class="input" id="t_start" type="date" placeholder="jj/mm/aaaa" />
+              </div>
+              <div>
+                <label class="label">Fin</label>
+                <input class="input" id="t_end" type="date" placeholder="jj/mm/aaaa" />
+              </div>
+            </div>
+
+            <div class="row">
+              <button class="btn btn-primary" id="btnSaveTask">Enregistrer tâche</button>
+              <button class="btn btn-ghost" id="btnNewTask">Nouvelle</button>
+              <button class="btn btn-danger" id="btnDeleteTask">Supprimer</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">📋</span> Tâches du projet</div>
+          <div class="panel-controls">
+            <span class="filters-indicator" id="projectFiltersBadge">Tri/filtre actif</span>
+            <button class="btn btn-ghost" id="btnResetSortProject">Réinitialiser tri</button>
+          </div>
+          <div class="tablewrap">
+            <table class="table" id="projectTasksTable">
+              <thead>
+                <tr>
+                  <th style="width:120px" data-sort="num">N°</th>
+                  <th data-sort="task">Description</th>
+                  <th data-sort="status">Statuts</th>
+                  <th data-sort="start">Début</th>
+                  <th data-sort="end">Fin</th>
+                  <th data-sort="duration">Durée (jours)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">📅</span> Gantt hebdo</div>
+          <div id="legend" class="legend"></div>
+          <div id="gantt"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="node_modules/flatpickr/dist/flatpickr.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js';document.head.appendChild(s);"></script>
+  <script src="node_modules/flatpickr/dist/l10n/fr.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/fr.js';document.head.appendChild(s);"></script>
+
+<!-- SUPABASE CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- TON APP -->
+<script src="app.js"></script>
+
+  <!-- Bloc imprimable (cartouche + légende) injecté en JS -->
+  <template id="printTemplate">
+    <div class="print-order">
+      <div class="print-header print-block" id="printHeader">
+        <h1>Suivi de Chantiers</h1>
+        <div class="print-meta" id="printMeta"></div>
+      </div>
+      <div class="legend print-block" id="printLegend"></div>
+    </div>
+  </template>
+</body>
+</html>
