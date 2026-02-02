@@ -23,7 +23,6 @@ body{
   background:
     linear-gradient(var(--bg-overlay), var(--bg-overlay)),
     url("https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1920&q=80") center/cover fixed no-repeat;
-  overflow-x:hidden;
 }
 .hidden{display:none;}
 
@@ -220,12 +219,11 @@ body{
 .gantt-table{
   display:block;
   max-width:100%;
-  overflow-x:auto;
+  overflow:visible;
 }
 .gantt-table .table{
-  white-space:nowrap;
-  width:max-content;
-  min-width:100%;
+  white-space:normal;
+  width:100%;
 }
 .empty-row{text-align:center;color:var(--muted);}
 
