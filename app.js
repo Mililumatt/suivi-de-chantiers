@@ -542,7 +542,7 @@ function renderGantt(projectId){
   });
 
   let html="<div class='tablewrap gantt-table'><table class='table'>";
-  html+="<thead><tr><th style='width:190px'>Tâche</th><th style='width:70px'>Statut</th>";
+  html+="<thead><tr><th style='width:190px'>Tâche</th><th style='width:70px'>Type</th>";
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
@@ -637,6 +637,7 @@ function renderGantt(projectId){
 
   html+="</tbody></table></div>";
   wrap.innerHTML=html;
+  wrap.querySelectorAll("th").forEach(th=>{ if(th.textContent.trim()==="Statut") th.textContent="Type"; });
   wrap.querySelectorAll(".bar-click")?.forEach(bar=>{
     bar.onclick=()=>{
       const taskId = bar.dataset.task;
@@ -793,6 +794,7 @@ function renderMasterGantt(){
 
   html+="</tbody></table></div>";
   wrap.innerHTML=html;
+  wrap.querySelectorAll("th").forEach(th=>{ if(th.textContent.trim()==="Statut") th.textContent="Type"; });
   wrap.querySelectorAll(".bar-click")?.forEach(bar=>{
     bar.onclick=()=>{
       const taskId = bar.dataset.task;
