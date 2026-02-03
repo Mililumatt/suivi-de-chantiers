@@ -985,11 +985,11 @@ function renderWorkloadChart(tasks){
     const hExt = (d.external/maxVal)*chartH;
     const hMix = (d.mixte/maxVal)*chartH;
     y -= hInt;
-    bars+=`<rect class="wl-bar-internal" x="${x}" y="${y}" width="${barW}" height="${hInt}" rx="4" ry="4"></rect>`;
+    bars+=`<rect class="wl-bar-internal" fill="url(#grad-int)" x="${x}" y="${y}" width="${barW}" height="${hInt}" rx="4" ry="4"></rect>`;
     y -= hMix;
-    bars+=`<rect class="wl-bar-mixte" x="${x}" y="${y}" width="${barW}" height="${hMix}" rx="4" ry="4"></rect>`;
+    bars+=`<rect class="wl-bar-mixte" fill="url(#grad-mix)" x="${x}" y="${y}" width="${barW}" height="${hMix}" rx="4" ry="4"></rect>`;
     y -= hExt;
-    bars+=`<rect class="wl-bar-external" x="${x}" y="${y}" width="${barW}" height="${hExt}" rx="4" ry="4"></rect>`;
+    bars+=`<rect class="wl-bar-external" fill="url(#grad-ext)" x="${x}" y="${y}" width="${barW}" height="${hExt}" rx="4" ry="4"></rect>`;
     const lbl = keyToLabel(d.key, mode);
     const lx = x + barW/2;
     const ly = h - m.b + 14;
@@ -1017,16 +1017,7 @@ function renderWorkloadChart(tasks){
       </linearGradient>
     </defs>
   `;
-  // replace flat fills with gradients in bars
-  const barsGrad = bars
-    .replace(/wl-bar-internal/g,"")
-    .replace(/wl-bar-external/g,"")
-    .replace(/wl-bar-mixte/g,"")
-    .replace(/fill=\"[^\\\"]*\"/g,"")
-    .replace(/rect /g, 'rect fill="url(#grad-int)" ')
-    .replace(/fill=\"url\\(#grad-int\\)\"(.*mixte)/g, 'fill="url(#grad-mix)"$1')
-    .replace(/fill=\"url\\(#grad-mix\\)\"(.*external)/g, 'fill="url(#grad-ext)"$1');
-  svg.innerHTML = `<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}"></rect>${defs}<g>${grid}</g><g>${barsGrad}</g>${legend}`;
+  svg.innerHTML = `<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}"></rect>${defs}<g>${grid}</g><g>${bars}</g>${legend}`;
 }
 
 function renderFilters(){
