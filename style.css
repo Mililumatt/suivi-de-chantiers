@@ -367,7 +367,8 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 .gantt-row{
   display:flex;
   align-items:center;
-  min-height:16px;
+  gap:4px;
+  min-height:18px;
   width:100%;
 }
 .gantt-bar.multi{
@@ -376,13 +377,13 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   border-radius:6px;
 }
 .gantt-spacer{
-  height:16px;
+  height:12px;
   margin:0;
   border-radius:6px;
   opacity:0;
   width:100%;
   display:block;
-  flex:1 1 auto;
+  flex:1 1 100%;
 }
 .bar-wrapper{
   display:flex;
