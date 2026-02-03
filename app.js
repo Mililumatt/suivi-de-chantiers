@@ -1038,7 +1038,9 @@ function renderMaster(){
         const status = parseStatuses(t.status)[0] || "";
         const color = STATUS_COLORS[(status||"").toUpperCase()] || "#475569";
         const label = STATUSES.find(s=>s.v===status)?.label || status || "En cours";
-        return `<span class="live-item"><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${num}</span> ${label}</span>`;
+        const proj = state.projects.find(x=>x.id===t.projectId);
+        const projName = proj?.name || "Projet";
+        return `<span class="live-item"><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${num}</span> ${projName} — ${label}</span>`;
       }).join(" ");
       masterLive.innerHTML = `<span class="live-title">Projet démarré • Tâches en cours :</span> ${badges}`;
     }
@@ -1133,7 +1135,8 @@ function renderProject(){
         const status = parseStatuses(t.status)[0] || "";
         const color = STATUS_COLORS[(status||"").toUpperCase()] || "#475569";
         const label = STATUSES.find(s=>s.v===status)?.label || status || "En cours";
-        return `<span class="live-item"><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${num}</span> ${label}</span>`;
+        const projName = p.name || "Projet";
+        return `<span class="live-item"><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${num}</span> ${projName} — ${label}</span>`;
       }).join(" ");
       live.innerHTML = `<span class="live-title">Projet démarré • Tâches en cours :</span> ${badges}`;
     }
