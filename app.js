@@ -155,6 +155,7 @@ let selectedStatusSet = new Set();
 let sortMaster = {key:"project", dir:"asc"};
 let sortProject = {key:"num", dir:"asc"};
 let unsavedChanges = false;
+let isLocked = true; // verrou lecture seule par défaut
 
 const STATUSES = [
   {v:"CHANTIER_COMPLET", label:"Chantier complet"},
@@ -424,6 +425,32 @@ function flashSaved(){
   btn.textContent = "✅ Sauvegardé";
   btn.classList.add("pulse");
   setTimeout(()=>{ btn.textContent = old; btn.classList.remove("pulse"); },1200);
+}
+
+function setLockState(flag){
+  isLocked = !!flag;
+  const lockClass = "is-disabled";
+  const ids = [
+    "btnSave","btnAddProject","btnAddTask",
+    "btnSaveProject","btnDeleteProject",
+    "btnSaveTask","btnNewTask","btnDeleteTask"
+  ];
+  ids.forEach(id=>{
+    const n=el(id);
+    if(!n) return;
+    n.classList.toggle(lockClass, isLocked);
+    if(isLocked) n.setAttribute("disabled","disabled");
+    else n.removeAttribute("disabled");
+  });
+  // visuel live
+  const live = el("masterLive");
+  if(live){
+    live.classList.toggle("is-disabled", isLocked);
+  }
+  const plive = el("projectLive");
+  if(plive){
+    plive.classList.toggle("is-disabled", isLocked);
+  }
 }
 
 function statusLabels(values){
@@ -1209,6 +1236,7 @@ function bind(){
   });
 
   el("btnSave")?.addEventListener("click", ()=>{
+    if(isLocked) return;
     saveState();
     // Flux simple : téléchargement d'un JSON à écraser manuellement dans le dossier projet.
     downloadBackup();
@@ -1231,6 +1259,7 @@ function bind(){
     window.print();
   });
   el("btnAddProject")?.addEventListener("click", ()=>{
+    if(isLocked) return;
     const id = uid();
     const name = "Nouveau projet";
     state.projects.push({id,name,site:"",constraints:"",subproject:""});
@@ -1240,6 +1269,7 @@ function bind(){
     renderAll();
   });
   el("btnSaveProject")?.addEventListener("click", ()=>{
+    if(isLocked) return;
     if(!selectedProjectId) return;
     const p = state.projects.find(x=>x.id===selectedProjectId);
     if(!p) return;
@@ -1252,6 +1282,7 @@ function bind(){
     renderProject();
   });
   el("btnDeleteProject")?.addEventListener("click", ()=>{
+    if(isLocked) return;
     if(!selectedProjectId) return;
     if(!confirm("Supprimer ce projet et toutes ses tâches ? Cette action est définitive.")) return;
     state.projects = state.projects.filter(p=>p.id!==selectedProjectId);
@@ -1262,6 +1293,7 @@ function bind(){
     renderAll();
   });
   el("btnAddTask")?.addEventListener("click", ()=>{
+    if(isLocked) return;
     if(!selectedProjectId) return;
     const id=uid();
     state.tasks.push({id,projectId:selectedProjectId,roomNumber:"",status:"",owner:"",start:"",end:"",notes:""});
@@ -1270,11 +1302,13 @@ function bind(){
     renderProject();
   });
   el("btnNewTask")?.addEventListener("click", ()=>{
+    if(isLocked) return;
     // Dupliquer les valeurs affichées pour faciliter la création en série
     selectedTaskId=null;
     el("btnNewTask")?.classList.add("btn-armed");
   });
   el("btnDeleteTask")?.addEventListener("click", ()=>{
+    if(isLocked) return;
     if(!selectedProjectId || !selectedTaskId) return;
     if(!confirm("Supprimer cette tâche ?")) return;
     state.tasks = state.tasks.filter(t=> !(t.id===selectedTaskId && t.projectId===selectedProjectId));
@@ -1284,6 +1318,7 @@ function bind(){
     el("btnNewTask")?.classList.remove("btn-armed");
   });
   el("btnSaveTask")?.addEventListener("click", ()=>{
+    if(isLocked) return;
     if(!selectedProjectId) return;
     let t = state.tasks.find(x=>x.id===selectedTaskId && x.projectId===selectedProjectId);
     if(!t){

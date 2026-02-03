@@ -300,6 +300,7 @@
     panel.classList.remove("show");
     pwd.value="";
     lock.classList.remove("hidden"); // réaffiche immédiatement
+    if(window.setLockState) window.setLockState(true);
   };
   ck.onchange = async ()=>{
     if(ck.checked){
@@ -311,6 +312,7 @@
         localStorage.setItem("lock_disabled","1");
         sessionStorage.setItem("unlocked","1");
         lock.classList.add("hidden");
+        if(window.setLockState) window.setLockState(false);
       }else{
         alert("Mot de passe incorrect");
         ck.checked=false;
@@ -329,6 +331,9 @@
   if(disabled || unlocked){
     lock.classList.add("hidden");
     if(disabled) ck.checked=true;
+    if(window.setLockState) window.setLockState(false);
+  }else{
+    if(window.setLockState) window.setLockState(true);
   }
 })();
 </script>
