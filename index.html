@@ -295,9 +295,11 @@
   gear.onclick = ()=> panel.classList.toggle("show");
   relockBtn.onclick = ()=>{
     localStorage.removeItem("lock_disabled");
+    sessionStorage.removeItem("unlocked");
     ck.checked=false;
     panel.classList.remove("show");
-    // re-affichera au prochain reload
+    pwd.value="";
+    lock.classList.remove("hidden"); // réaffiche immédiatement
   };
   ck.onchange = async ()=>{
     if(ck.checked){
