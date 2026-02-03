@@ -366,7 +366,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 }
 .gantt-row{
   display:block;
-  min-height:18px;
+  min-height:16px;
   width:100%;
 }
 .gantt-bar.multi{
@@ -374,7 +374,14 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   margin:0;
   border-radius:6px;
 }
-.gantt-spacer{height:12px;margin:0;border-radius:6px;opacity:0;width:100%;}
+.gantt-spacer{
+  height:16px;
+  margin:0;
+  border-radius:6px;
+  opacity:0;
+  width:100%;
+  display:block;
+}
 .bar-wrapper{
   display:flex;
   flex-direction:column;
