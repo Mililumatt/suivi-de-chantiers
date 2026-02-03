@@ -7,8 +7,61 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
   <link rel="stylesheet" href="print.css" media="print" />
+  <style>
+    /* --- Pseudo-login overlay (reversible) --- */
+    #lockscreen{
+      position:fixed;inset:0;z-index:99999;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(17,24,39,0.72);
+      backdrop-filter:blur(6px);
+      transition:opacity .18s ease;
+    }
+    #lockscreen.hidden{opacity:0;pointer-events:none;}
+    .lock-card{
+      background:#fff; padding:18px 20px; border-radius:14px;
+      box-shadow:0 18px 36px rgba(0,0,0,0.24);
+      width:300px; text-align:center; font-family:var(--sans);
+    }
+    .lock-title{font-weight:800;font-size:17px;margin-bottom:6px;color:#0f172a;}
+    .lock-input{width:100%;padding:9px 10px;border-radius:10px;border:1px solid #d1d5db;font-size:13px;margin:8px 0;}
+    .lock-btn{width:100%;padding:9px 10px;border-radius:10px;border:1px solid #2563eb;background:#2563eb;color:#fff;font-weight:700;cursor:pointer;}
+    .lock-msg{font-size:12px;color:#6b7280;margin-top:6px;}
+    /* gear */
+    #gear-btn{
+      position:fixed;top:10px;right:10px;z-index:100000;
+      width:34px;height:34px;border-radius:50%;border:1px solid rgba(0,0,0,0.12);
+      background:#fff;box-shadow:0 10px 22px rgba(0,0,0,0.18);cursor:pointer;
+      display:flex;align-items:center;justify-content:center;font-size:17px;
+    }
+    #gear-panel{
+      position:fixed;top:52px;right:10px;z-index:100000;
+      background:#fff;padding:10px 12px;border-radius:10px;
+      box-shadow:0 12px 24px rgba(0,0,0,0.18);width:230px;
+      display:none;gap:8px;flex-direction:column;font-size:12px;
+    }
+    #gear-panel.show{display:flex;}
+    #gear-panel label{display:flex;align-items:center;gap:6px;font-weight:600;color:#0f172a;}
+    #gear-panel small{color:#6b7280;}
+    #gear-panel button{align-self:flex-end;}
+  </style>
 </head>
 <body>
+  <!-- Gear / bypass -->
+  <button id="gear-btn" title="Options accès">⚙️</button>
+  <div id="gear-panel">
+    <label><input type="checkbox" id="ck_disable_lock"> Désactiver le verrou (dev)</label>
+    <small>Réactive pour remettre le verrou au rechargement.</small>
+    <button class="btn btn-ghost" id="btn_relock">Réactiver le verrou</button>
+  </div>
+  <!-- Lockscreen -->
+  <div id="lockscreen">
+    <div class="lock-card">
+      <div class="lock-title">Accès restreint</div>
+      <input id="lock-pwd" class="lock-input" type="password" placeholder="Mot de passe" />
+      <button id="lock-submit" class="lock-btn">Entrer</button>
+      <div class="lock-msg">Mot de passe requis (local, non sécurisé)</div>
+    </div>
+  </div>
   <header class="topbar">
     <div>
       <div class="brand" id="brandTitle">Suivi de Chantiers</div>
@@ -210,6 +263,73 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- TON APP -->
 <script src="app.js"></script>
+<script>
+// Pseudo-login (dissuasif uniquement)
+(function(){
+  const HASH = "sha256:d033e22ae348aeb5660fc2140aec35850c4da997"; // SHA-256 du mot de passe "admin"
+  const lock = document.getElementById("lockscreen");
+  const pwd  = document.getElementById("lock-pwd");
+  const btn  = document.getElementById("lock-submit");
+  const gear = document.getElementById("gear-btn");
+  const panel= document.getElementById("gear-panel");
+  const ck   = document.getElementById("ck_disable_lock");
+  const relockBtn = document.getElementById("btn_relock");
+
+  function hash(str){
+    const enc = new TextEncoder().encode(str);
+    return crypto.subtle.digest("SHA-256", enc).then(buf=>{
+      const hex = [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+      return "sha256:"+hex;
+    });
+  }
+  async function tryUnlock(){
+    const h = await hash(pwd.value||"");
+    if(h===HASH){
+      sessionStorage.setItem("unlocked","1");
+      lock.classList.add("hidden");
+    }else{
+      alert("Mot de passe incorrect");
+    }
+  }
+  // gear toggle
+  gear.onclick = ()=> panel.classList.toggle("show");
+  relockBtn.onclick = ()=>{
+    localStorage.removeItem("lock_disabled");
+    ck.checked=false;
+    panel.classList.remove("show");
+    // re-affichera au prochain reload
+  };
+  ck.onchange = async ()=>{
+    if(ck.checked){
+      // demande le mot de passe une fois pour activer le bypass
+      const pass = prompt("Mot de passe pour désactiver le verrou ?");
+      if(!pass){ ck.checked=false; return; }
+      const h = await hash(pass);
+      if(h===HASH){
+        localStorage.setItem("lock_disabled","1");
+        sessionStorage.setItem("unlocked","1");
+        lock.classList.add("hidden");
+      }else{
+        alert("Mot de passe incorrect");
+        ck.checked=false;
+      }
+    }else{
+      localStorage.removeItem("lock_disabled");
+    }
+    panel.classList.remove("show");
+  };
+  btn.onclick = tryUnlock;
+  pwd.onkeydown = (e)=>{ if(e.key==="Enter") tryUnlock(); };
+
+  // auto-unlock si bypass activé ou session déjà validée
+  const disabled = localStorage.getItem("lock_disabled")==="1";
+  const unlocked = sessionStorage.getItem("unlocked")==="1";
+  if(disabled || unlocked){
+    lock.classList.add("hidden");
+    if(disabled) ck.checked=true;
+  }
+})();
+</script>
 
   <!-- Bloc imprimable (cartouche + légende) injecté en JS -->
   <template id="printTemplate">
