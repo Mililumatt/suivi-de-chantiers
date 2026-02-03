@@ -559,16 +559,31 @@ function renderGantt(projectId){
   });
   html+="</tr></thead><tbody>";
 
-  // Une ligne par tâche : titre = Nom du projet + Description
-  const lanes = tasks.map(t=>({title: ganttLaneTitle(t), tasks:[t]}));
+  // Regrouper : même Nom de projet + même Description => même ligne
+  const lanesMap = new Map();
+  tasks.forEach(t=>{
+    const title = ganttLaneTitle(t);
+    const key = title.toLowerCase() || "no-title";
+    if(!lanesMap.has(key)) lanesMap.set(key,{title, tasks:[]});
+    lanesMap.get(key).tasks.push(t);
+  });
+  const lanes = Array.from(lanesMap.values());
+  lanes.forEach(l=>{
+    l.tasks.sort((a,b)=>{
+      const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
+      if(sa!==sb) return sa-sb;
+      const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
+      if(ea!==eb) return ea-eb;
+      return (a.roomNumber||"").localeCompare(b.roomNumber||"");
+    });
+  });
   lanes.sort((a,b)=>{
-    const ta=a.tasks[0], tb=b.tasks[0];
-    const oa=(taskOrderMap[ta.id]||9999)-(taskOrderMap[tb.id]||9999);
-    if(oa!==0) return oa;
-    const sa=Date.parse(ta.start||"9999-12-31"), sb=Date.parse(tb.start||"9999-12-31");
-    if(sa!==sb) return sa-sb;
-    const ea=Date.parse(ta.end||"9999-12-31"), eb=Date.parse(tb.end||"9999-12-31");
-    if(ea!==eb) return ea-eb;
+    const ma = Math.min(...a.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
+    const mb = Math.min(...b.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
+    if(ma!==mb) return ma-mb;
+    const oa = Math.min(...a.tasks.map(t=>taskOrderMap[t.id]||9999));
+    const ob = Math.min(...b.tasks.map(t=>taskOrderMap[t.id]||9999));
+    if(oa!==ob) return oa-ob;
     return a.title.localeCompare(b.title);
   });
 
@@ -712,16 +727,31 @@ function renderMasterGantt(){
   });
   html+="</tr></thead><tbody>";
 
-  // une ligne par tâche : Nom du projet + Description (facultatif)
-  const lanes = tasks.map(t=>({title: ganttLaneTitle(t), tasks:[t]}));
+  // Regrouper : même Nom de projet + même Description => même ligne
+  const lanesMap = new Map();
+  tasks.forEach(t=>{
+    const title = ganttLaneTitle(t);
+    const key = title.toLowerCase() || "no-title";
+    if(!lanesMap.has(key)) lanesMap.set(key,{title, tasks:[]});
+    lanesMap.get(key).tasks.push(t);
+  });
+  const lanes = Array.from(lanesMap.values());
+  lanes.forEach(l=>{
+    l.tasks.sort((a,b)=>{
+      const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
+      if(sa!==sb) return sa-sb;
+      const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
+      if(ea!==eb) return ea-eb;
+      return (a.roomNumber||"").localeCompare(b.roomNumber||"");
+    });
+  });
   lanes.sort((a,b)=>{
-    const ta=a.tasks[0], tb=b.tasks[0];
-    const oa=(taskOrderMap[ta.id]||9999)-(taskOrderMap[tb.id]||9999);
-    if(oa!==0) return oa;
-    const sa=Date.parse(ta.start||"9999-12-31"), sb=Date.parse(tb.start||"9999-12-31");
-    if(sa!==sb) return sa-sb;
-    const ea=Date.parse(ta.end||"9999-12-31"), eb=Date.parse(tb.end||"9999-12-31");
-    if(ea!==eb) return ea-eb;
+    const ma = Math.min(...a.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
+    const mb = Math.min(...b.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
+    if(ma!==mb) return ma-mb;
+    const oa = Math.min(...a.tasks.map(t=>taskOrderMap[t.id]||9999));
+    const ob = Math.min(...b.tasks.map(t=>taskOrderMap[t.id]||9999));
+    if(oa!==ob) return oa-ob;
     return a.title.localeCompare(b.title);
   });
 
@@ -1470,3 +1500,5 @@ function cleanupPrint(){
 if(typeof window !== "undefined"){
   window.onafterprint = cleanupPrint;
 }
+
+
