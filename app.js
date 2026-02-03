@@ -442,6 +442,13 @@ function setLockState(flag){
     if(isLocked) n.setAttribute("disabled","disabled");
     else n.removeAttribute("disabled");
   });
+  // tab close (supprimer projet)
+  const tabCloses = document.querySelectorAll(".tab-close");
+  tabCloses.forEach(n=>{
+    n.classList.toggle(lockClass, isLocked);
+    if(isLocked) n.setAttribute("aria-disabled","true");
+    else n.removeAttribute("aria-disabled");
+  });
   // visuel live
   const live = el("masterLive");
   if(live){
@@ -897,6 +904,7 @@ function renderTabs(){
   tabs.querySelectorAll(".tab-close").forEach(close=>{
     close.onclick=(e)=>{
       e.stopPropagation();
+      if(isLocked) return;
       const pid = close.dataset.close;
       if(!pid) return;
       const name = state.projects.find(p=>p.id===pid)?.name || "ce projet";
