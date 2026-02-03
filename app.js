@@ -902,6 +902,10 @@ function sortTasks(list, cfg){
   const dir = cfg.dir==="desc" ? -1 : 1;
   const get = (t)=>{
     switch(cfg.key){
+      case "site": {
+        const p = state.projects.find(x=>x.id===t.projectId);
+        return (p?.site||"").toLowerCase();
+      }
       case "project": {
         const p = state.projects.find(x=>x.id===t.projectId);
         return (p?.name||"").toLowerCase();
@@ -982,7 +986,7 @@ function filteredTasks(){
     if(fs && !parseStatuses(t.status).includes(fs)) return false;
     const p = state.projects.find(x=>x.id===t.projectId);
     if(q){
-      const hay=(taskTitle(t)+" "+(p?.name||"")+" "+(t.owner||"")+" "+parseStatuses(t.status).join(" ")).toLowerCase();
+      const hay=(taskTitle(t)+" "+(p?.name||"")+" "+(p?.site||"")+" "+(t.owner||"")+" "+parseStatuses(t.status).join(" ")).toLowerCase();
       if(!hay.includes(q)) return false;
     }
     if(startAfter && (!t.start || t.start < startAfter)) return false;
@@ -1021,7 +1025,7 @@ function renderMaster(){
   renderMasterMetrics(tasks);
   const sorted = sortTasks(tasks, sortMaster);
   if(sorted.length===0){
-    tbody.innerHTML="<tr><td colspan='7' class='empty-row'>Aucune tâche.</td></tr>";
+    tbody.innerHTML="<tr><td colspan='8' class='empty-row'>Aucune tâche.</td></tr>";
     return;
   }
   let h="";
@@ -1031,6 +1035,7 @@ function renderMaster(){
     const c = STATUS_COLORS[statuses[0]] || "#1f2937";
     const rowBg = siteColor(p?.site);
     h+=`<tr data-project="${t.projectId}" data-task="${t.id}" style="--site-bg:${rowBg};background:var(--site-bg);">
+      <td>${p?.site||""}</td>
       <td>${p?.name||"Sans projet"}</td>
       <td><span class="num-badge" style="--badge-color:${c};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span> <span class="icon-picto">📌</span> ${taskTitle(t)}</td>
       <td class="status-cell"><span class="status-left">${statusDot(statuses[0])}${statusLabels(t.status||"")}</span>${t.owner?ownerBadge(t.owner):""}</td>
