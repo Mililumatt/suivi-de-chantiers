@@ -156,6 +156,7 @@ let sortMaster = {key:"project", dir:"asc"};
 let sortProject = {key:"num", dir:"asc"};
 let unsavedChanges = false;
 let isLocked = true; // verrou lecture seule par défaut
+let workloadMode = "week";
 
 const STATUSES = [
   {v:"CHANTIER_COMPLET", label:"Chantier complet"},
@@ -200,6 +201,15 @@ const statusDot = (v)=> `<span class="icon-dot" style="background:${statusColor(
 const parseStatuses = (s)=> (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 const deepClone = (obj)=> JSON.parse(JSON.stringify(obj));
 const siteColor = (_site="")=>"transparent";
+const ownerType = (o="")=>{
+  const k=o.toLowerCase();
+  const hasInt = k.includes("interne");
+  const hasExt = k.includes("externe");
+  if(hasInt && hasExt) return "mixte";
+  if(hasExt) return "externe";
+  if(hasInt) return "interne";
+  return "inconnu";
+};
 const ownerBadge = (o="")=>{
   const k = o.toLowerCase();
   let color = "#0f172a"; // interne par défaut
@@ -554,6 +564,45 @@ function isoWeekInfo(d){
   return {week:weekNo, year:date.getUTCFullYear()};
 }
 
+function weekKey(d){
+  const info=isoWeekInfo(d);
+  return `${info.year}-S${String(info.week).padStart(2,"0")}`;
+}
+function keyToLabel(key, mode){
+  if(mode==="day"){
+    const [y,m,da]=key.split("-");
+    return `${da}/${m}`;
+  }
+  // week
+  const parts=key.split("-S");
+  if(parts.length===2) return `S${parts[1]}/${String(parts[0]).slice(2)}`;
+  return key;
+}
+
+function computeWorkloadData(tasks, mode="week"){
+  const map = new Map(); // key -> {internal, external, mixte, total, anchor}
+  tasks.filter(t=>t.start && t.end).forEach(t=>{
+    const start=new Date(t.start+"T00:00:00");
+    const end=new Date(t.end+"T00:00:00");
+    if(isNaN(start)||isNaN(end)|| end<start) return;
+    const typ = ownerType(t.owner);
+    for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+      const key = mode==="day" ? d.toISOString().slice(0,10) : weekKey(d);
+      const anchor = mode==="day" ? d.getTime() : startOfWeek(d).getTime();
+      if(!map.has(key)) map.set(key,{internal:0,external:0,mixte:0,total:0,anchor});
+      const slot = map.get(key);
+      if(typ==="interne") slot.internal+=1;
+      else if(typ==="externe") slot.external+=1;
+      else if(typ==="mixte") slot.mixte+=1;
+      else slot.external+=1; // défaut: compter comme externe
+      slot.total = slot.internal + slot.external + slot.mixte;
+    }
+  });
+  const arr = Array.from(map.entries()).map(([key,val])=>({...val,key}));
+  arr.sort((a,b)=> a.anchor - b.anchor);
+  return arr;
+}
+
 function renderGantt(projectId){
   const wrap = el("gantt");
   const legend = el("legend");
@@ -818,7 +867,7 @@ function renderMasterGantt(){
     html+=`<td class="gantt-status-cell"><div class="gantt-status-stack">${statusText}</div></td>`;
 
     weeks.forEach(w=>{
-      const rows = lineStatuses.map(st=>{
+  const rows = lineStatuses.map(st=>{
         const bars = lane.tasks
           .filter(t=> parseStatuses(t.status).map(v=>v.toUpperCase()).includes(st))
           .map(t=>{
@@ -855,6 +904,88 @@ function renderMasterGantt(){
       renderProject();
     };
   });
+}
+
+function exportSvgToPdf(svgId, title="Export"){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  const serializer = new XMLSerializer();
+  const str = serializer.serializeToString(svg);
+  const blob = new Blob([str], {type:"image/svg+xml;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  const { width, height } = svg.getBoundingClientRect();
+  img.onload = function(){
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.floor(width));
+    canvas.height = Math.max(1, Math.floor(height));
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    const data = canvas.toDataURL("image/png");
+    const w = window.open("");
+    if(!w) return;
+    w.document.write(`<title>${title}</title><style>body{margin:0;padding:20px;text-align:center;font-family:sans-serif;} img{max-width:100%;} h1{font-size:16px;margin-bottom:12px;}</style><h1>${title}</h1><img src="${data}">`);
+    w.document.close();
+    w.focus();
+    w.print();
+  };
+  img.src = url;
+}
+
+function renderWorkloadChart(tasks){
+  const select = el("workloadGranularity");
+  const mode = select?.value || workloadMode || "week";
+  workloadMode = mode;
+  const data = computeWorkloadData(tasks, mode);
+  const svg = el("workloadChart");
+  if(!svg) return;
+  const w=900, h=260, m={l:50,r:20,t:20,b:45};
+  svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
+  svg.innerHTML="";
+  if(data.length===0){
+    svg.innerHTML = `<text x="${w/2}" y="${h/2}" text-anchor="middle" fill="#6b7280" font-size="12">Aucune tâche datée</text>`;
+    return;
+  }
+  const maxVal = Math.max(...data.map(d=>d.total),1);
+  const chartW = w - m.l - m.r;
+  const chartH = h - m.t - m.b;
+  const barGap = 6;
+  const barW = Math.max(8, Math.min(60, (chartW / data.length) - barGap));
+  const xStart = m.l;
+  let grid="";
+  const ticks=4;
+  for(let i=0;i<=ticks;i++){
+    const y = m.t + chartH - (i/ticks)*chartH;
+    const val = Math.round((i/ticks)*maxVal);
+    grid+=`<line class="wl-grid" x1="${m.l}" y1="${y}" x2="${w-m.r}" y2="${y}"></line>`;
+    grid+=`<text class="wl-axis" x="${m.l-6}" y="${y+4}" text-anchor="end">${val}</text>`;
+  }
+  let bars="";
+  data.forEach((d,idx)=>{
+    const x = xStart + idx*(barW+barGap);
+    let y = m.t + chartH;
+    const hInt = (d.internal/maxVal)*chartH;
+    const hExt = (d.external/maxVal)*chartH;
+    const hMix = (d.mixte/maxVal)*chartH;
+    y -= hInt;
+    bars+=`<rect class="wl-bar-internal" x="${x}" y="${y}" width="${barW}" height="${hInt}"></rect>`;
+    y -= hMix;
+    bars+=`<rect class="wl-bar-mixte" x="${x}" y="${y}" width="${barW}" height="${hMix}"></rect>`;
+    y -= hExt;
+    bars+=`<rect class="wl-bar-external" x="${x}" y="${y}" width="${barW}" height="${hExt}"></rect>`;
+    const lbl = keyToLabel(d.key, mode);
+    const lx = x + barW/2;
+    const ly = h - m.b + 14;
+    bars+=`<text class="wl-axis" x="${lx}" y="${ly}" text-anchor="middle">${lbl}</text>`;
+  });
+  const legend=`<g transform="translate(${w-200},${m.t})">
+    <rect class="wl-bar-internal" x="0" y="0" width="12" height="12"></rect><text class="wl-axis" x="18" y="11">Interne</text>
+    <rect class="wl-bar-external" x="0" y="20" width="12" height="12"></rect><text class="wl-axis" x="18" y="31">Externe</text>
+    <rect class="wl-bar-mixte" x="0" y="40" width="12" height="12"></rect><text class="wl-axis" x="18" y="51">Mixte</text>
+  </g>`;
+  svg.innerHTML = `<g>${grid}</g><g>${bars}</g>${legend}`;
 }
 
 function renderFilters(){
@@ -1059,6 +1190,10 @@ function renderMaster(){
   const tasks = filteredTasks();
   renderKPIs(tasks);
   renderMasterMetrics(tasks);
+  // Charge de travail
+  const wlSel = el("workloadGranularity");
+  if(wlSel && workloadMode) wlSel.value = workloadMode;
+  renderWorkloadChart(filteredTasks());
   // Bandeau live global (toutes tâches en cours aujourd'hui)
   const masterLive = el("masterLive");
   if(masterLive){
@@ -1265,6 +1400,13 @@ function bind(){
     selectedProjectId = null;
     preparePrint();
     window.print();
+  });
+  el("workloadGranularity")?.addEventListener("change", ()=>{
+    workloadMode = el("workloadGranularity")?.value || "week";
+    renderWorkloadChart(filteredTasks());
+  });
+  el("btnExportWorkload")?.addEventListener("click", ()=>{
+    exportSvgToPdf("workloadChart","Charge de travail");
   });
   el("btnAddProject")?.addEventListener("click", ()=>{
     if(isLocked) return;

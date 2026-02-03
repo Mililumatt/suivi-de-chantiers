@@ -417,6 +417,16 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   gap:2px;
   width:100%;
 }
+
+/* Charge de travail */
+#workloadChart{min-height:200px;}
+.wl-axis text{font-size:11px;fill:#0f172a;}
+.wl-bar-internal{fill:#0f172a;}
+.wl-bar-external{fill:#b45309;}
+.wl-bar-mixte{fill:#6b21a8;}
+.wl-grid{stroke:#e5e7eb;stroke-width:1;}
+.wl-legend{display:flex;gap:8px;align-items:center;font-size:12px;}
+.wl-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block;}
 .gantt-status-cell{
   font-size:10px;
   color:#0b1424;
