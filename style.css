@@ -365,7 +365,8 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   width:100%;
 }
 .gantt-row{
-  display:block;
+  display:flex;
+  align-items:center;
   min-height:16px;
   width:100%;
 }
@@ -381,6 +382,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   opacity:0;
   width:100%;
   display:block;
+  flex:1 1 auto;
 }
 .bar-wrapper{
   display:flex;
