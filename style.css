@@ -409,6 +409,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   align-items:center;
   justify-content:space-between;
   gap:8px;
+  min-height:18px; /* aligne la hauteur avec les lignes de barres gantt */
 }
 .status-row .badge.owner{
   margin-left:auto;
