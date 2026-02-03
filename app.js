@@ -169,7 +169,7 @@ const STATUSES = [
   {v:"PREPARATION", label:"Préparation"},
   {v:"TDV",          label:"TDV"},
   {v:"MACONNERIE",   label:"Maçonnerie"},
-  {v:"HUIS_SER",     label:"Huisseries / serrurerie"},
+  {v:"HUIS_SER",     label:"Huisseries"},
   {v:"RESEAUX",      label:"Réseaux"},
   {v:"TOITURE",      label:"Toiture / étanchéité"},
   {v:"ETUDE",        label:"Étude"},
