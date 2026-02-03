@@ -450,6 +450,13 @@ function taskTitle(t){
   return projectName;
 }
 
+function ganttLaneTitle(t){
+  const p = state?.projects?.find(x=>x.id===t.projectId);
+  const projectName = (p?.name || "Sans projet").trim() || "Sans projet";
+  const desc = (t.roomNumber || "").trim();
+  return desc ? `${projectName} - ${desc}` : projectName;
+}
+
 function computeTaskOrderMap(){
   const map={};
   state.projects.forEach(p=>{
@@ -552,32 +559,17 @@ function renderGantt(projectId){
   });
   html+="</tr></thead><tbody>";
 
-  // Regrouper par titre : une seule ligne par tâche/ sous-projet
-  const lanesMap = new Map();
-  tasks.forEach(t=>{
-    const proj = state.projects.find(p=>p.id===t.projectId);
-    const key = (proj?.name || "Sans projet").trim().toLowerCase() || "no-project";
-    const title = proj ? (proj.name || "Sans projet") : "Sans projet";
-    if(!lanesMap.has(key)) lanesMap.set(key,{title,tasks:[]});
-    lanesMap.get(key).tasks.push(t);
-  });
-  const lanes = Array.from(lanesMap.values()).sort((a,b)=>{
-    const ma = Math.min(...a.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
-    const mb = Math.min(...b.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
-    if(ma!==mb) return ma-mb;
-    const oa = Math.min(...a.tasks.map(t=>taskOrderMap[t.id]||9999));
-    const ob = Math.min(...b.tasks.map(t=>taskOrderMap[t.id]||9999));
-    if(oa!==ob) return oa-ob;
+  // Une ligne par tâche : titre = Nom du projet + Description
+  const lanes = tasks.map(t=>({title: ganttLaneTitle(t), tasks:[t]}));
+  lanes.sort((a,b)=>{
+    const ta=a.tasks[0], tb=b.tasks[0];
+    const oa=(taskOrderMap[ta.id]||9999)-(taskOrderMap[tb.id]||9999);
+    if(oa!==0) return oa;
+    const sa=Date.parse(ta.start||"9999-12-31"), sb=Date.parse(tb.start||"9999-12-31");
+    if(sa!==sb) return sa-sb;
+    const ea=Date.parse(ta.end||"9999-12-31"), eb=Date.parse(tb.end||"9999-12-31");
+    if(ea!==eb) return ea-eb;
     return a.title.localeCompare(b.title);
-  });
-  lanes.forEach(l=>{
-    l.tasks.sort((a,b)=>{
-      const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
-      if(sa!==sb) return sa-sb;
-      const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
-      if(ea!==eb) return ea-eb;
-      return (a.roomNumber||"").localeCompare(b.roomNumber||"");
-    });
   });
 
   lanes.forEach(lane=>{
@@ -720,31 +712,18 @@ function renderMasterGantt(){
   });
   html+="</tr></thead><tbody>";
 
-  // regrouper par projet (fusion sous-projets)
-  const lanesMap = new Map();
-  tasks.forEach(t=>{
-    const proj = state.projects.find(p=>p.id===t.projectId);
-    const key = (proj?.name || "Sans projet").trim().toLowerCase() || "no-project";
-    const title = proj ? (proj.name || "Sans projet") : "Sans projet";
-    if(!lanesMap.has(key)) lanesMap.set(key,{title: title, tasks:[]});
-    lanesMap.get(key).tasks.push(t);
-  });
-  const lanes = Array.from(lanesMap.values()).sort((a,b)=>{
-    const ma = Math.min(...a.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
-    const mb = Math.min(...b.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
-    if(ma!==mb) return ma-mb;
-    const oa = Math.min(...a.tasks.map(t=>taskOrderMap[t.id]||9999));
-    const ob = Math.min(...b.tasks.map(t=>taskOrderMap[t.id]||9999));
-    if(oa!==ob) return oa-ob;
+  // une ligne par tâche : Nom du projet + Description (facultatif)
+  const lanes = tasks.map(t=>({title: ganttLaneTitle(t), tasks:[t]}));
+  lanes.sort((a,b)=>{
+    const ta=a.tasks[0], tb=b.tasks[0];
+    const oa=(taskOrderMap[ta.id]||9999)-(taskOrderMap[tb.id]||9999);
+    if(oa!==0) return oa;
+    const sa=Date.parse(ta.start||"9999-12-31"), sb=Date.parse(tb.start||"9999-12-31");
+    if(sa!==sb) return sa-sb;
+    const ea=Date.parse(ta.end||"9999-12-31"), eb=Date.parse(tb.end||"9999-12-31");
+    if(ea!==eb) return ea-eb;
     return a.title.localeCompare(b.title);
   });
-  lanes.forEach(l=> l.tasks.sort((a,b)=>{
-    const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
-    if(sa!==sb) return sa-sb;
-    const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
-    if(ea!==eb) return ea-eb;
-    return (a.roomNumber||"").localeCompare(b.roomNumber||"");
-  }));
 
   lanes.forEach(lane=>{
     const firstTask = lane.tasks[0];
