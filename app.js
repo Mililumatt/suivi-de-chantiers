@@ -1031,7 +1031,7 @@ function renderMaster(){
       .filter(t=>t.start && t.end && t.start<=todayKey && t.end>=todayKey)
       .sort((a,b)=> (taskOrderMap[a.id]||999)-(taskOrderMap[b.id]||999));
     if(inProgress.length===0){
-      masterLive.innerHTML = "";
+      masterLive.innerHTML = `<span class="live-title">Projet non démarré</span>`;
     }else{
       const badges = inProgress.map(t=>{
         const num = taskOrderMap[t.id]||"";
@@ -1126,7 +1126,7 @@ function renderProject(){
       .filter(t=>t.projectId===p.id && t.start && t.end && t.start<=todayKey && t.end>=todayKey)
       .sort((a,b)=> (taskOrderMap[a.id]||999)-(taskOrderMap[b.id]||999));
     if(inProgress.length===0){
-      live.innerHTML = "";
+      live.innerHTML = `<span class="live-title">Projet non démarré</span>`;
     }else{
       const badges = inProgress.map(t=>{
         const num = taskOrderMap[t.id]||"";
