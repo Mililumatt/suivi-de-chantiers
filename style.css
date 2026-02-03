@@ -364,12 +364,19 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   gap:2px;
   width:100%;
 }
+.gantt-row{
+  display:flex;
+  align-items:center;
+  min-height:18px;
+  gap:4px;
+  width:100%;
+}
 .gantt-bar.multi{
   height:12px;
   margin:0;
   border-radius:6px;
 }
-.gantt-spacer{height:12px;margin:0;border-radius:6px;opacity:0;}
+.gantt-spacer{height:12px;margin:0;border-radius:6px;opacity:0;width:100%;}
 .bar-wrapper{
   display:flex;
   flex-direction:column;

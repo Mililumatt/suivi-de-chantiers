@@ -629,9 +629,10 @@ function renderGantt(projectId){
           .filter(x=>x.geo.days>0)
           .sort((a,b)=>a.order-b.order);
 
-        if(bars.length===0) return `<div class="gantt-spacer"></div>`;
+        if(bars.length===0) return `<div class="gantt-row"><div class="gantt-spacer"></div></div>`;
         const color = STATUS_COLORS[st] || "#1f2937";
-        return bars.map(seg=>`<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}" style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`).join("");
+        const barHtml = bars.map(seg=>`<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}" style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`).join("");
+        return `<div class="gantt-row">${barHtml}</div>`;
       }).join("");
 
       html+=`<td class="gantt-cell"><div class="gantt-cell-inner">${cellRows || `<div class="gantt-spacer"></div>`}</div></td>`;
@@ -795,9 +796,10 @@ function renderMasterGantt(){
           .filter(x=>x.geo.days>0)
           .sort((a,b)=>a.order-b.order);
 
-        if(bars.length===0) return `<div class="gantt-spacer"></div>`;
+        if(bars.length===0) return `<div class="gantt-row"><div class="gantt-spacer"></div></div>`;
         const color = STATUS_COLORS[st] || "#1f2937";
-        return bars.map(seg=>`<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}" style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`).join("");
+        const barHtml = bars.map(seg=>`<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}" style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`).join("");
+        return `<div class="gantt-row">${barHtml}</div>`;
       }).join("");
 
       html+=`<td class="gantt-cell"><div class="gantt-cell-inner">${rows || `<div class="gantt-spacer"></div>`}</div></td>`;
