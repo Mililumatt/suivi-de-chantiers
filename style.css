@@ -365,10 +365,8 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   width:100%;
 }
 .gantt-row{
-  display:flex;
-  align-items:center;
+  display:block;
   min-height:18px;
-  gap:4px;
   width:100%;
 }
 .gantt-bar.multi{
