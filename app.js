@@ -1001,7 +1001,32 @@ function renderWorkloadChart(tasks){
     <rect class="wl-bar-external" x="0" y="20" width="12" height="12" rx="3"></rect><text class="wl-axis" x="18" y="31">Externe</text>
     <rect class="wl-bar-mixte" x="0" y="40" width="12" height="12" rx="3"></rect><text class="wl-axis" x="18" y="51">Mixte</text>
   </g>`;
-  svg.innerHTML = `<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}"></rect><g>${grid}</g><g>${bars}</g>${legend}`;
+  const defs = `
+    <defs>
+      <linearGradient id="grad-int" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#243c83" stop-opacity="0.92"/>
+        <stop offset="100%" stop-color="#1e3a8a" stop-opacity="0.8"/>
+      </linearGradient>
+      <linearGradient id="grad-ext" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#f8b14b" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.82"/>
+      </linearGradient>
+      <linearGradient id="grad-mix" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.82"/>
+      </linearGradient>
+    </defs>
+  `;
+  // replace flat fills with gradients in bars
+  const barsGrad = bars
+    .replace(/wl-bar-internal/g,"")
+    .replace(/wl-bar-external/g,"")
+    .replace(/wl-bar-mixte/g,"")
+    .replace(/fill=\"[^\\\"]*\"/g,"")
+    .replace(/rect /g, 'rect fill="url(#grad-int)" ')
+    .replace(/fill=\"url\\(#grad-int\\)\"(.*mixte)/g, 'fill="url(#grad-mix)"$1')
+    .replace(/fill=\"url\\(#grad-mix\\)\"(.*external)/g, 'fill="url(#grad-ext)"$1');
+  svg.innerHTML = `<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}"></rect>${defs}<g>${grid}</g><g>${barsGrad}</g>${legend}`;
 }
 
 function renderFilters(){
