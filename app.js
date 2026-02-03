@@ -878,6 +878,7 @@ function renderTabs(){
       if(selectedProjectId===pid) { selectedProjectId=null; selectedTaskId=null; }
       saveState();
       renderAll();
+      el("btnNewTask")?.classList.remove("btn-armed");
     };
   });
 }
@@ -1131,6 +1132,11 @@ function renderProject(){
     badge.textContent = num;
     badge.style.display = num ? "inline-flex" : "none";
   }
+  if(!selectedTaskId){
+    el("btnNewTask")?.classList.add("btn-armed");
+  }else{
+    el("btnNewTask")?.classList.remove("btn-armed");
+  }
 
   if(t){
     const desc = (t.roomNumber && t.roomNumber.trim()) || p.subproject || "";
@@ -1179,6 +1185,7 @@ function bind(){
     downloadBackup();
     flashSaved();
     renderAll();
+    el("btnNewTask")?.classList.remove("btn-armed");
   });
   // bouton impression PDF (utilise print.css)
   el("btnBack")?.addEventListener("click", ()=>{
@@ -1236,6 +1243,7 @@ function bind(){
   el("btnNewTask")?.addEventListener("click", ()=>{
     // Dupliquer les valeurs affichées pour faciliter la création en série
     selectedTaskId=null;
+    el("btnNewTask")?.classList.add("btn-armed");
   });
   el("btnDeleteTask")?.addEventListener("click", ()=>{
     if(!selectedProjectId || !selectedTaskId) return;
@@ -1244,6 +1252,7 @@ function bind(){
     selectedTaskId = null;
     markDirty();
     renderProject();
+    el("btnNewTask")?.classList.remove("btn-armed");
   });
   el("btnSaveTask")?.addEventListener("click", ()=>{
     if(!selectedProjectId) return;

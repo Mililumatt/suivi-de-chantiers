@@ -298,6 +298,12 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   color:#fff !important;
   box-shadow:0 6px 12px rgba(185,28,28,0.35) !important;
 }
+.btn-armed{
+  border-color:#b91c1c !important;
+  background:#ef4444 !important;
+  color:#fff !important;
+  box-shadow:0 6px 12px rgba(185,28,28,0.28) !important;
+}
 .btn.btn-success{
   border-color:#15803d !important;
   background:#22c55e !important;
