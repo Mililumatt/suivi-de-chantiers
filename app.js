@@ -1023,6 +1023,26 @@ function renderMaster(){
   const tasks = filteredTasks();
   renderKPIs(tasks);
   renderMasterMetrics(tasks);
+  // Bandeau live global (toutes tâches en cours aujourd'hui)
+  const masterLive = el("masterLive");
+  if(masterLive){
+    const todayKey = new Date().toISOString().slice(0,10);
+    const inProgress = tasks
+      .filter(t=>t.start && t.end && t.start<=todayKey && t.end>=todayKey)
+      .sort((a,b)=> (taskOrderMap[a.id]||999)-(taskOrderMap[b.id]||999));
+    if(inProgress.length===0){
+      masterLive.innerHTML = "";
+    }else{
+      const badges = inProgress.map(t=>{
+        const num = taskOrderMap[t.id]||"";
+        const status = parseStatuses(t.status)[0] || "";
+        const color = STATUS_COLORS[(status||"").toUpperCase()] || "#475569";
+        const label = STATUSES.find(s=>s.v===status)?.label || status || "En cours";
+        return `<span class="live-item"><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${num}</span> ${label}</span>`;
+      }).join(" ");
+      masterLive.innerHTML = `<span class="live-title">Projet démarré • Tâches en cours :</span> ${badges}`;
+    }
+  }
   const sorted = sortTasks(tasks, sortMaster);
   if(sorted.length===0){
     tbody.innerHTML="<tr><td colspan='8' class='empty-row'>Aucune tâche.</td></tr>";
