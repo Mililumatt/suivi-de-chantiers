@@ -172,6 +172,7 @@ const STATUSES = [
   {v:"HUIS_SER",     label:"Huisseries / serrurerie"},
   {v:"RESEAUX",      label:"Réseaux"},
   {v:"TOITURE",      label:"Toiture / étanchéité"},
+  {v:"ETUDE",        label:"Étude"},
 ];
 const sortedStatuses = ()=> [...STATUSES].sort((a,b)=> a.label.localeCompare(b.label,"fr",{sensitivity:"base"}));
 
