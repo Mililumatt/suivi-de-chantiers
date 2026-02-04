@@ -201,6 +201,7 @@ const statusDot = (v)=> `<span class="icon-dot" style="background:${statusColor(
 const parseStatuses = (s)=> (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 const deepClone = (obj)=> JSON.parse(JSON.stringify(obj));
 const siteColor = (_site="")=>"transparent";
+const attrEscape = (s="")=> s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const ownerType = (o="")=>{
   const k=o.toLowerCase();
   const hasInt = k.includes("interne");
@@ -652,7 +653,7 @@ function renderGantt(projectId){
   });
 
   let html="<div class='tablewrap gantt-table'><table class='table'>";
-  html+="<thead><tr><th style='width:190px'>Tâche</th><th style='width:70px'>Statut</th>";
+  html+="<thead><tr><th style='width:190px'>Tâche</th><th style='width:120px'>Prestataire</th><th style='width:70px'>Statut</th>";
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
@@ -712,8 +713,12 @@ function renderGantt(projectId){
       .map(txt=>`<div class="status-row"><span>${txt}</span></div>`)
       .join("");
 
+    const vendors = Array.from(new Set(lane.tasks.map(t=>t.vendor||"").filter(Boolean))).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+    const vendorHtml = vendors.length ? vendors.map(v=>`<span class="badge owner" style="background:#4b5563;border-color:#4b5563;color:#fff;">${v}</span>`).join(" ") : "<span class='text-muted'>—</span>";
+
     html+=`<tr data-lane="${lane.title}">`;
     html+=`<td><b><span class="num-badge" style="--badge-color:${c};--badge-text:#fff;">${taskOrderMap[firstTask.id]||""}</span> <span class="icon-picto">📌</span> ${lane.title}</b><div class="gantt-meta">${ownerBadgeHtml}</div></td>`;
+    html+=`<td class="gantt-vendor-cell">${vendorHtml}</td>`;
     html+=`<td class="gantt-status-cell"><div class="gantt-status-stack">${statusText}</div></td>`;
 
     weeks.forEach(w=>{
@@ -727,14 +732,17 @@ function renderGantt(projectId){
             const eDate=new Date(t.end+"T00:00:00");
             const geo=barGeometry(sDate,eDate,w);
             const order=Date.parse(t.start||"9999-12-31");
-            return {geo,taskId:t.id,order};
+            return {geo,taskId:t.id,order,vendor:t.vendor||""};
           })
           .filter(x=>x.geo.days>0)
           .sort((a,b)=>a.order-b.order);
 
         if(bars.length===0) return `<div class="gantt-row"><div class="gantt-spacer"></div></div>`;
         const color = STATUS_COLORS[st] || "#1f2937";
-        const barHtml = bars.map(seg=>`<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}" style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`).join("");
+        const barHtml = bars.map(seg=>{
+          const title = seg.vendor ? ` title="Prestataire : ${attrEscape(seg.vendor)}"` : "";
+          return `<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}"${title} style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`;
+        }).join("");
         return `<div class="gantt-row">${barHtml}</div>`;
       }).join("");
 
@@ -821,7 +829,7 @@ function renderMasterGantt(){
   });
 
   let html="<div class='tablewrap gantt-table'><table class='table'>";
-  html+="<thead><tr><th style='width:150px'>Tâche</th><th style='width:24px'>Statut</th>";
+  html+="<thead><tr><th style='width:150px'>Tâche</th><th style='width:120px'>Prestataire</th><th style='width:24px'>Statut</th>";
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
@@ -881,8 +889,12 @@ function renderMasterGantt(){
       .map(txt=>`<div class="status-row"><span>${txt}</span></div>`)
       .join("");
 
+    const vendors = Array.from(new Set(lane.tasks.map(t=>t.vendor||"").filter(Boolean))).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+    const vendorHtml = vendors.length ? vendors.map(v=>`<span class="badge owner" style="background:#4b5563;border-color:#4b5563;color:#fff;">${v}</span>`).join(" ") : "<span class='text-muted'>—</span>";
+
     html+=`<tr data-lane="${lane.title}">`;
     html+=`<td><b><span class="num-badge" style="--badge-color:${c};--badge-text:#fff;">${taskOrderMap[firstTask.id]||""}</span> <span class="icon-picto">📌</span> ${lane.title}</b><div class="gantt-meta">${ownerBadgeHtml}</div></td>`;
+    html+=`<td class="gantt-vendor-cell">${vendorHtml}</td>`;
     html+=`<td class="gantt-status-cell"><div class="gantt-status-stack">${statusText}</div></td>`;
 
     weeks.forEach(w=>{
@@ -894,14 +906,17 @@ function renderMasterGantt(){
             const eDate=new Date(t.end+"T00:00:00");
             const geo=barGeometry(sDate,eDate,w);
             const order=Date.parse(t.start||"9999-12-31");
-            return {geo,taskId:t.id,order};
+            return {geo,taskId:t.id,order,vendor:t.vendor||""};
           })
           .filter(x=>x.geo.days>0)
           .sort((a,b)=>a.order-b.order);
 
         if(bars.length===0) return `<div class="gantt-row"><div class="gantt-spacer"></div></div>`;
         const color = STATUS_COLORS[st] || "#1f2937";
-        const barHtml = bars.map(seg=>`<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}" style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`).join("");
+        const barHtml = bars.map(seg=>{
+          const title = seg.vendor ? ` title="Prestataire : ${attrEscape(seg.vendor)}"` : "";
+          return `<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}"${title} style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`;
+        }).join("");
         return `<div class="gantt-row">${barHtml}</div>`;
       }).join("");
 
