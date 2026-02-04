@@ -294,6 +294,7 @@ function renderVendorDropdown(filter=""){
 function showVendorDropdown(show){
   const box = el("vendorDropdown");
   if(!box) return;
+  box.style.display = show ? "block" : "none";
   box.classList.toggle("open", !!show);
 }
 

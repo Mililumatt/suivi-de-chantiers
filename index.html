@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Suivi de Chantiers</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .vendor-wrap{position:relative;}
+    .vendor-wrap > .input{-webkit-appearance:none;appearance:none;background-image:none !important;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;cursor:pointer;}
+    #t_vendor::-webkit-calendar-picker-indicator{display:none !important;} #t_vendor::-ms-expand{display:none !important;}
+    .vendor-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d1d5db;border-radius:6px;box-shadow:0 6px 16px rgba(0,0,0,0.12);max-height:220px;overflow:auto;z-index:4000;display:none;}
+    .vendor-dropdown.open{display:block;}
+    .vendor-item{padding:8px 10px;cursor:pointer;font-size:12px;}
+    .vendor-item:hover,.vendor-item:focus{background:#eef2ff;outline:none;}
+    .vendor-empty{padding:8px 10px;color:#6b7280;font-size:12px;}
+  </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
   <link rel="stylesheet" href="print.css" media="print" />
   <style>
@@ -224,7 +234,7 @@
             <label class="label">Prestataire externe</label>
             <div class="vendor-wrap">
               <input class="input" id="t_vendor" placeholder="Nom du prestataire (trié A→Z)" autocomplete="off" aria-label="Prestataire externe" />
-              <div id="vendorDropdown" class="vendor-dropdown" role="listbox" aria-label="Suggestions prestataire"></div>
+              <div id="vendorDropdown" class="vendor-dropdown" role="listbox" aria-label="Suggestions prestataire" style="display:none"></div>
             </div>
 
             <div class="grid2">
