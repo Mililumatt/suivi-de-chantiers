@@ -239,6 +239,7 @@ function refreshVendorsList(){
 
 function setupVendorPicker(){
   const input = el("t_vendor");
+  const manageBtn = el("btnManageVendors");
   if(!input) return;
   const openList = ()=>{
     renderVendorDropdown(input.value);
@@ -260,14 +261,29 @@ function setupVendorPicker(){
   });
   document.addEventListener("click",(e)=>{
     const box = el("vendorDropdown");
+    const panel = el("vendorManagerPanel");
     if(!box || !input) return;
-    if(!box.contains(e.target) && e.target!==input){
-      showVendorDropdown(false);
-    }
+    if(!box.contains(e.target) && e.target!==input){ showVendorDropdown(false); }
+    if(panel && !panel.contains(e.target) && e.target!==manageBtn){ panel.style.display="none"; }
   });
   const box = el("vendorDropdown");
   if(box){
     box.addEventListener("mousedown",(e)=>e.preventDefault()); // empêcher blur avant le click
+  }
+  if(manageBtn){
+    manageBtn.onclick=(e)=>{
+      e.stopPropagation();
+      const panel = el("vendorManagerPanel");
+      if(!panel) return;
+      const visible = panel.style.display==="block";
+      if(visible){
+        panel.style.display="none";
+      }else{
+        renderVendorManager();
+        panel.style.display="block";
+        showVendorDropdown(false);
+      }
+    };
   }
 }
 
@@ -296,6 +312,48 @@ function showVendorDropdown(show){
   if(!box) return;
   box.style.display = show ? "block" : "none";
   box.classList.toggle("open", !!show);
+}
+
+function renderVendorManager(){
+  const panel = el("vendorManagerPanel");
+  if(!panel) return;
+  if(vendorsCache.length===0){
+    panel.innerHTML = `<div class="vendor-empty">Aucun prestataire enregistré</div>`;
+    return;
+  }
+  panel.innerHTML = vendorsCache.map(v=>`
+    <div class="vendor-row">
+      <span class="vendor-name">${attrEscape(v)}</span>
+      <div class="vendor-actions">
+        <button class="btn btn-ghost vendor-rename" data-v="${attrEscape(v)}">Renommer</button>
+        <button class="btn btn-danger vendor-delete" data-v="${attrEscape(v)}">Supprimer</button>
+      </div>
+    </div>
+  `).join("");
+  panel.querySelectorAll(".vendor-rename").forEach(btn=>{
+    btn.onclick=()=>{
+      const oldName = btn.dataset.v || "";
+      const newName = prompt("Nouveau nom du prestataire :", oldName) || "";
+      const trimmed = newName.trim();
+      if(!trimmed) return;
+      vendorsCache = vendorsCache.map(x=> x===oldName ? trimmed : x);
+      vendorsCache = Array.from(new Set(vendorsCache)).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+      saveVendorsRegistry(vendorsCache);
+      renderVendorDropdown(el("t_vendor")?.value||"");
+      renderVendorManager();
+    };
+  });
+  panel.querySelectorAll(".vendor-delete").forEach(btn=>{
+    btn.onclick=()=>{
+      const name = btn.dataset.v || "";
+      if(!name) return;
+      if(!confirm(`Supprimer le prestataire "${name}" ?`)) return;
+      vendorsCache = vendorsCache.filter(x=>x!==name);
+      saveVendorsRegistry(vendorsCache);
+      renderVendorDropdown(el("t_vendor")?.value||"");
+      renderVendorManager();
+    };
+  });
 }
 
 function normalizeState(raw){
