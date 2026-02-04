@@ -249,9 +249,13 @@ function setupVendorPicker(){
     const evt = new KeyboardEvent("keydown",{key:"ArrowDown",bubbles:true});
     input.dispatchEvent(evt);
   };
-  input.addEventListener("focus", openList);
-  input.addEventListener("click", openList);
   if(btn) btn.addEventListener("click", openList);
+  input.addEventListener("keydown",(e)=>{
+    if(e.key==="ArrowDown" || e.key==="F4"){
+      e.preventDefault();
+      openList();
+    }
+  });
 }
 
 function normalizeState(raw){
