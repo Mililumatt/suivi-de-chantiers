@@ -271,8 +271,10 @@ function setupVendorPicker(){
     box.addEventListener("mousedown",(e)=>e.preventDefault()); // empêcher blur avant le click
   }
   if(manageBtn){
+    manageBtn.disabled = isLocked;
     manageBtn.onclick=(e)=>{
       e.stopPropagation();
+      if(isLocked) return;
       const panel = el("vendorManagerPanel");
       if(!panel) return;
       const visible = panel.style.display==="block";
@@ -610,6 +612,18 @@ function setLockState(flag){
     if(isLocked) n.setAttribute("disabled","disabled");
     else n.removeAttribute("disabled");
   });
+  // gestion prestataires : désactiver + masquer panels/dropdown
+  const manageBtn = el("btnManageVendors");
+  if(manageBtn){
+    manageBtn.classList.toggle(lockClass, isLocked);
+    if(isLocked) manageBtn.setAttribute("disabled","disabled");
+    else manageBtn.removeAttribute("disabled");
+  }
+  if(isLocked){
+    showVendorDropdown(false);
+    const panel = el("vendorManagerPanel");
+    if(panel) panel.style.display="none";
+  }
   // tab close (supprimer projet)
   const tabCloses = document.querySelectorAll(".tab-close");
   tabCloses.forEach(n=>{
