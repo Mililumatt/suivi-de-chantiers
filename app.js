@@ -234,22 +234,24 @@ function refreshVendorsList(){
   list.innerHTML = vendors.map(v=>`<option value="${attrEscape(v)}"></option>`).join("");
   // conserver la saisie courante
   if(current) input.value = current;
+  // mémoriser la dernière saisie pour la rajouter à la liste au prochain refresh
+  if(current && !vendors.includes(current)){
+    list.insertAdjacentHTML("afterbegin", `<option value="${attrEscape(current)}"></option>`);
+  }
 }
 
 function setupVendorPicker(){
   const input = el("t_vendor");
-  const btn = el("t_vendor_btn");
   if(!input) return;
   const openList = ()=>{
     if(typeof input.showPicker === "function"){
       try{ input.showPicker(); return; }catch(e){}
     }
-    // fallback : focus + flèche bas pour suggérer la liste
     input.focus();
     const evt = new KeyboardEvent("keydown",{key:"ArrowDown",bubbles:true});
     input.dispatchEvent(evt);
   };
-  if(btn) btn.addEventListener("click", openList);
+  input.addEventListener("click", openList);
   input.addEventListener("keydown",(e)=>{
     if(e.key==="ArrowDown" || e.key==="F4"){
       e.preventDefault();

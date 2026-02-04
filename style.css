@@ -466,17 +466,6 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   gap:8px;
   min-height:18px; /* aligne la hauteur avec les lignes de barres gantt */
 }
-.input-with-btn{
-  display:grid;
-  grid-template-columns: 1fr 36px;
-  gap:6px;
-  align-items:center;
-}
-.icon-btn{
-  padding:0 8px;
-  min-width:auto;
-  line-height:1;
-}
 .gantt-vendor-cell{
   vertical-align:middle;
   width:140px;
