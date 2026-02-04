@@ -222,29 +222,37 @@ const ownerBadge = (o="")=>{
 };
 
 function refreshVendorsList(){
-  const select = el("t_vendor");
-  if(!select) return;
+  const input = el("t_vendor");
+  const list = el("vendorsList");
+  if(!input || !list) return;
   const vendors = Array.from(new Set(
     (state?.tasks||[])
       .map(t=>(t.vendor||"").trim())
       .filter(Boolean)
   )).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
-  const current = select.value;
-  let opts = `<option value="">— Choisir —</option>`;
-  vendors.forEach(v=>{ opts+=`<option value="${attrEscape(v)}">${attrEscape(v)}</option>`; });
-  select.innerHTML = opts;
-  // si valeur en cours non présente (nouvelle saisie), on l'ajoute en tête pour ne pas la perdre
-  if(current && !vendors.includes(current)){
-    const extra = document.createElement("option");
-    extra.value = current;
-    extra.textContent = current;
-    select.prepend(extra);
-    select.value = current;
-  } else {
-    select.value = current || "";
-  }
+  const current = input.value;
+  list.innerHTML = vendors.map(v=>`<option value="${attrEscape(v)}"></option>`).join("");
+  // conserver la saisie courante
+  if(current) input.value = current;
 }
 
+function setupVendorPicker(){
+  const input = el("t_vendor");
+  const btn = el("t_vendor_btn");
+  if(!input) return;
+  const openList = ()=>{
+    if(typeof input.showPicker === "function"){
+      try{ input.showPicker(); return; }catch(e){}
+    }
+    // fallback : focus + flèche bas pour suggérer la liste
+    input.focus();
+    const evt = new KeyboardEvent("keydown",{key:"ArrowDown",bubbles:true});
+    input.dispatchEvent(evt);
+  };
+  input.addEventListener("focus", openList);
+  input.addEventListener("click", openList);
+  if(btn) btn.addEventListener("click", openList);
+}
 
 function normalizeState(raw){
   if(!raw) return defaultState();
@@ -1613,6 +1621,7 @@ function bind(){
     const n=el(id); 
     if(n) n.addEventListener("input", ()=>{ renderMaster(); saveUIState(); markDirty(); });
   });
+  setupVendorPicker();
   // Affichage date du jour + copyright
   const brandSub = el("brandSub");
   if(brandSub){
