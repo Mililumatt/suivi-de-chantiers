@@ -341,8 +341,13 @@ function renderVendorManager(){
       vendorsCache = vendorsCache.map(x=> x===oldName ? trimmed : x);
       vendorsCache = Array.from(new Set(vendorsCache)).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
       saveVendorsRegistry(vendorsCache);
+      // mettre à jour toutes les tâches utilisant l'ancien nom
+      (state?.tasks||[]).forEach(t=>{
+        if((t.vendor||"")===oldName) t.vendor = trimmed;
+      });
       renderVendorDropdown(el("t_vendor")?.value||"");
       renderVendorManager();
+      renderAll();
     };
   });
   panel.querySelectorAll(".vendor-delete").forEach(btn=>{
