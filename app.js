@@ -205,6 +205,20 @@ const attrEscape = (s="")=> s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").repla
 let vendorsCache = [];
 const VENDOR_STORE_KEY = "vendors_registry";
 const VENDOR_DELETE_KEY = "vendors_deleted";
+const normalizeVendor = (v="")=> v.trim();
+const dedupVendors = (arr=[])=>{
+  const seen=new Set();
+  const out=[];
+  arr.forEach(v=>{
+    const norm = normalizeVendor(v);
+    if(!norm) return;
+    const key = norm.toLowerCase();
+    if(seen.has(key)) return;
+    seen.add(key);
+    out.push(norm);
+  });
+  return out;
+};
 const ownerType = (o="")=>{
   const k=o.toLowerCase();
   const hasInt = k.includes("interne");
@@ -230,14 +244,16 @@ function refreshVendorsList(){
   const registry = loadVendorsRegistry();
   const deleted = new Set(loadDeletedVendors().map(x=>x.toLowerCase()));
   const fromTasks = (state?.tasks||[])
-    .map(t=>(t.vendor||"").trim())
+    .map(t=> normalizeVendor(t.vendor||""))
     .filter(Boolean)
     .filter(v=> !deleted.has(v.toLowerCase()));
-  vendorsCache = Array.from(new Set([...registry, ...fromTasks]))
+  vendorsCache = dedupVendors([...registry, ...fromTasks])
     .filter(v=> !deleted.has(v.toLowerCase()))
     .sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
-  const current = input.value.trim();
-  if(current && !vendorsCache.includes(current)) vendorsCache.unshift(current);
+  const current = normalizeVendor(input.value);
+  if(current && !vendorsCache.map(x=>x.toLowerCase()).includes(current.toLowerCase())){
+    vendorsCache.unshift(current);
+  }
   saveVendorsRegistry(vendorsCache);
   renderVendorDropdown(current);
 }
@@ -300,7 +316,7 @@ function renderVendorDropdown(filter=""){
   if(!box || !input) return;
   // s'assurer que les prestataires supprimés ne réapparaissent pas
   const deleted = new Set(loadDeletedVendors().map(x=>x.toLowerCase()));
-  const q = (filter||"").toLowerCase();
+  const q = normalizeVendor(filter||"").toLowerCase();
   const list = vendorsCache
     .filter(v=> !deleted.has(v.toLowerCase()))
     .filter(v=>!q || v.toLowerCase().includes(q))
@@ -331,7 +347,7 @@ function renderVendorManager(){
     panel.innerHTML = `<div class="vendor-empty">Aucun prestataire enregistré</div>`;
     return;
   }
-  panel.innerHTML = vendorsCache.map(v=>`
+  panel.innerHTML = dedupVendors(vendorsCache).map(v=>`
     <div class="vendor-row">
       <span class="vendor-name">${attrEscape(v)}</span>
       <div class="vendor-actions">
@@ -349,12 +365,13 @@ function renderVendorManager(){
       // retirer de la liste des supprimés si présent
       let deleted = loadDeletedVendors().filter(x=> x.toLowerCase()!==oldName.toLowerCase());
       saveDeletedVendors(deleted);
-      vendorsCache = vendorsCache.map(x=> x===oldName ? trimmed : x);
+      vendorsCache = vendorsCache.map(x=> x.toLowerCase()===oldName.toLowerCase() ? trimmed : x);
+      vendorsCache = dedupVendors(vendorsCache);
       vendorsCache = Array.from(new Set(vendorsCache)).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
       saveVendorsRegistry(vendorsCache);
       // mettre à jour toutes les tâches utilisant l'ancien nom
       (state?.tasks||[]).forEach(t=>{
-        if((t.vendor||"")===oldName) t.vendor = trimmed;
+        if((t.vendor||"").toLowerCase()===oldName.toLowerCase()) t.vendor = trimmed;
       });
       renderVendorDropdown(el("t_vendor")?.value||"");
       renderVendorManager();
@@ -366,14 +383,15 @@ function renderVendorManager(){
       const name = btn.dataset.v || "";
       if(!name) return;
       if(!confirm(`Supprimer le prestataire "${name}" ?`)) return;
-      vendorsCache = vendorsCache.filter(x=>x!==name);
+      vendorsCache = vendorsCache.filter(x=>x.toLowerCase()!==name.toLowerCase());
+      vendorsCache = dedupVendors(vendorsCache);
       saveVendorsRegistry(vendorsCache);
       // ajouter à la liste des supprimés pour filtrage futur
       const deleted = Array.from(new Set([...loadDeletedVendors(), name]));
       saveDeletedVendors(deleted);
       // retirer ce prestataire des tâches existantes
       (state?.tasks||[]).forEach(t=>{
-        if((t.vendor||"")===name) t.vendor = "";
+        if((t.vendor||"").toLowerCase()===name.toLowerCase()) t.vendor = "";
       });
       saveState();
       renderVendorDropdown(el("t_vendor")?.value||"");
@@ -492,7 +510,7 @@ function loadVendorsRegistry(){
     const raw = localStorage.getItem(VENDOR_STORE_KEY);
     if(!raw) return [];
     const arr = JSON.parse(raw);
-    if(Array.isArray(arr)) return arr.filter(Boolean);
+    if(Array.isArray(arr)) return dedupVendors(arr);
     return [];
   }catch(e){
     console.warn("Unable to load vendor registry", e);
@@ -523,7 +541,7 @@ function saveDeletedVendors(list){
 
 function saveVendorsRegistry(list){
   try{
-    localStorage.setItem(VENDOR_STORE_KEY, JSON.stringify(list));
+    localStorage.setItem(VENDOR_STORE_KEY, JSON.stringify(dedupVendors(list)));
   }catch(e){
     console.warn("Unable to save vendor registry", e);
   }
@@ -923,7 +941,11 @@ function renderGantt(projectId){
       .map(txt=>`<div class="status-row"><span>${txt}</span></div>`)
       .join("");
 
-    const vendors = Array.from(new Set(lane.tasks.map(t=>t.vendor||"").filter(Boolean))).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+    let vendors = Array.from(new Set(lane.tasks.map(t=>t.vendor||"").filter(Boolean))).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+    if(vendors.length===0){
+      const hasInternal = lane.tasks.some(t=> (t.owner||"").toLowerCase().includes("interne"));
+      if(hasInternal) vendors = ["Équipe interne"];
+    }
     const vendorHtml = vendors.length ? vendors.map(v=>`<span class="badge owner" style="background:#4b5563;border-color:#4b5563;color:#fff;">${v}</span>`).join(" ") : "<span class='text-muted'>—</span>";
 
     html+=`<tr data-lane="${lane.title}">`;
@@ -1099,7 +1121,11 @@ function renderMasterGantt(){
       .map(txt=>`<div class="status-row"><span>${txt}</span></div>`)
       .join("");
 
-    const vendors = Array.from(new Set(lane.tasks.map(t=>t.vendor||"").filter(Boolean))).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+    let vendors = Array.from(new Set(lane.tasks.map(t=>t.vendor||"").filter(Boolean))).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+    if(vendors.length===0){
+      const hasInternal = lane.tasks.some(t=> (t.owner||"").toLowerCase().includes("interne"));
+      if(hasInternal) vendors = ["Équipe interne"];
+    }
     const vendorHtml = vendors.length ? vendors.map(v=>`<span class="badge owner" style="background:#4b5563;border-color:#4b5563;color:#fff;">${v}</span>`).join(" ") : "<span class='text-muted'>—</span>";
 
     html+=`<tr data-lane="${lane.title}">`;
