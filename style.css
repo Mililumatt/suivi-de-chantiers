@@ -455,7 +455,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 }
 .vendor-manage-btn{
   position:absolute;
-  right:4px;
+  right:6px;
   top:50%;
   transform:translateY(-50%);
   width:36px;
@@ -467,6 +467,13 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   border:1px solid #d1d5db;
   border-radius:6px;
   box-shadow:inset 0 1px 2px rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.06);
+  z-index:2;
+}
+.vendor-manage-btn:disabled,
+.vendor-manage-btn.is-disabled{
+  opacity:0.45;
+  pointer-events:none;
+  cursor:not-allowed;
 }
 .gantt-status-stack{
   display:flex;

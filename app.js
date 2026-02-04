@@ -204,6 +204,7 @@ const siteColor = (_site="")=>"transparent";
 const attrEscape = (s="")=> s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 let vendorsCache = [];
 const VENDOR_STORE_KEY = "vendors_registry";
+const VENDOR_DELETE_KEY = "vendors_deleted";
 const ownerType = (o="")=>{
   const k=o.toLowerCase();
   const hasInt = k.includes("interne");
@@ -227,10 +228,14 @@ function refreshVendorsList(){
   const input = el("t_vendor");
   if(!input) return;
   const registry = loadVendorsRegistry();
+  const deleted = new Set(loadDeletedVendors().map(x=>x.toLowerCase()));
   const fromTasks = (state?.tasks||[])
     .map(t=>(t.vendor||"").trim())
-    .filter(Boolean);
-  vendorsCache = Array.from(new Set([...registry, ...fromTasks])).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+    .filter(Boolean)
+    .filter(v=> !deleted.has(v.toLowerCase()));
+  vendorsCache = Array.from(new Set([...registry, ...fromTasks]))
+    .filter(v=> !deleted.has(v.toLowerCase()))
+    .sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
   const current = input.value.trim();
   if(current && !vendorsCache.includes(current)) vendorsCache.unshift(current);
   saveVendorsRegistry(vendorsCache);
@@ -293,8 +298,11 @@ function renderVendorDropdown(filter=""){
   const box = el("vendorDropdown");
   const input = el("t_vendor");
   if(!box || !input) return;
+  // s'assurer que les prestataires supprimés ne réapparaissent pas
+  const deleted = new Set(loadDeletedVendors().map(x=>x.toLowerCase()));
   const q = (filter||"").toLowerCase();
   const list = vendorsCache
+    .filter(v=> !deleted.has(v.toLowerCase()))
     .filter(v=>!q || v.toLowerCase().includes(q))
     .slice(0,50);
   if(list.length===0){
@@ -338,6 +346,9 @@ function renderVendorManager(){
       const newName = prompt("Nouveau nom du prestataire :", oldName) || "";
       const trimmed = newName.trim();
       if(!trimmed) return;
+      // retirer de la liste des supprimés si présent
+      let deleted = loadDeletedVendors().filter(x=> x.toLowerCase()!==oldName.toLowerCase());
+      saveDeletedVendors(deleted);
       vendorsCache = vendorsCache.map(x=> x===oldName ? trimmed : x);
       vendorsCache = Array.from(new Set(vendorsCache)).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
       saveVendorsRegistry(vendorsCache);
@@ -357,8 +368,17 @@ function renderVendorManager(){
       if(!confirm(`Supprimer le prestataire "${name}" ?`)) return;
       vendorsCache = vendorsCache.filter(x=>x!==name);
       saveVendorsRegistry(vendorsCache);
+      // ajouter à la liste des supprimés pour filtrage futur
+      const deleted = Array.from(new Set([...loadDeletedVendors(), name]));
+      saveDeletedVendors(deleted);
+      // retirer ce prestataire des tâches existantes
+      (state?.tasks||[]).forEach(t=>{
+        if((t.vendor||"")===name) t.vendor = "";
+      });
+      saveState();
       renderVendorDropdown(el("t_vendor")?.value||"");
       renderVendorManager();
+      renderAll();
     };
   });
 }
@@ -375,6 +395,11 @@ function normalizeState(raw){
     projectId:normId(t.projectId),
     status: normalizeStatus(t.status)
   }));
+  // filtrer les prestataires supprimés
+  const deleted = new Set(loadDeletedVendors().map(x=>x.toLowerCase()));
+  normTasks.forEach(t=>{
+    if(t.vendor && deleted.has(t.vendor.toLowerCase())) t.vendor = "";
+  });
   return {projects:normProjects, tasks:normTasks, ui: raw.ui||{}};
 }
 const formatDate = (s)=>{
@@ -472,6 +497,27 @@ function loadVendorsRegistry(){
   }catch(e){
     console.warn("Unable to load vendor registry", e);
     return [];
+  }
+}
+
+function loadDeletedVendors(){
+  try{
+    const raw = localStorage.getItem(VENDOR_DELETE_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)) return arr.filter(Boolean);
+    return [];
+  }catch(e){
+    console.warn("Unable to load deleted vendors", e);
+    return [];
+  }
+}
+
+function saveDeletedVendors(list){
+  try{
+    localStorage.setItem(VENDOR_DELETE_KEY, JSON.stringify(list));
+  }catch(e){
+    console.warn("Unable to save deleted vendors", e);
   }
 }
 
