@@ -968,16 +968,22 @@ function exportSvgToPdf(svgId, title="Export"){
     `);
     w.document.close();
     const targetImg = w.document.getElementById("__print_img");
+    let printed=false;
     const launchPrint = ()=>{
+      if(printed) return;
+      printed=true;
       w.focus();
       w.print();
+      // refermer la fenêtre d'export après l'impression (ou après un court délai si pas de callback)
+      setTimeout(()=>{ try{ w.close(); }catch(e){} }, 800);
     };
     if(targetImg){
       if(targetImg.complete){
         launchPrint();
       }else{
         targetImg.addEventListener("load", ()=>launchPrint(), { once:true });
-        setTimeout(()=>launchPrint(),300);
+        // filet de secours en cas d'absence d'événement load
+        setTimeout(()=>launchPrint(),500);
       }
     }else{
       launchPrint();
