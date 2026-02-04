@@ -220,6 +220,17 @@ const ownerBadge = (o="")=>{
   return `<span class="badge owner" style="background:${color};border-color:${color};color:#fff;">${o}</span>`;
 };
 
+function refreshVendorsList(){
+  const list = el("vendorsList");
+  if(!list) return;
+  const vendors = Array.from(new Set(
+    (state?.tasks||[])
+      .map(t=>(t.vendor||"").trim())
+      .filter(Boolean)
+  )).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+  list.innerHTML = vendors.map(v=>`<option value="${v}"></option>`).join("");
+}
+
 function normalizeState(raw){
   if(!raw) return defaultState();
   const normalizeStatus = (s)=> (s||"").split(",").filter(Boolean).map(v=>{
@@ -1417,16 +1428,18 @@ function renderProject(){
     const desc = (t.roomNumber && t.roomNumber.trim()) || p.subproject || "";
     el("t_room").value=desc;
     el("t_owner").value=t.owner||"";
+    el("t_vendor").value=t.vendor||"";
     el("t_start").value=formatDate(t.start)||"";
     el("t_end").value=formatDate(t.end)||"";
     setStatusSelection(t.status||"");
   }else{
-    el("t_room").value=""; el("t_owner").value=""; el("t_start").value=""; el("t_end").value="";
+    el("t_room").value=""; el("t_owner").value=""; el("t_vendor").value=""; el("t_start").value=""; el("t_end").value="";
     setStatusSelection("");
   }
 
   renderGantt(p.id);
   renderProjectTasks(p.id);
+  refreshVendorsList();
 }
 
 function renderAll(){
@@ -1434,6 +1447,7 @@ function renderAll(){
   if(!state || !Array.isArray(state.projects) || state.projects.length===0){
     state = defaultState();
   }
+  refreshVendorsList();
   // réinitialiser les filtres visibles pour éviter un filtrage bloquant
   ["filterProject","filterStatus","filterSearch","filterStartAfter","filterEndBefore"].forEach(id=>{
     const n=el(id);
@@ -1553,6 +1567,7 @@ function bind(){
     }
     t.roomNumber = el("t_room").value.trim();
     t.owner      = el("t_owner").value;
+    t.vendor     = el("t_vendor").value.trim();
     t.start      = unformatDate(el("t_start").value);
     t.end        = unformatDate(el("t_end").value);
     if(t.end && t.start && t.end < t.start){
@@ -1563,6 +1578,7 @@ function bind(){
     t.status     = Array.from(selectedStatusSet).join(",");
     markDirty();
     renderProject();
+    refreshVendorsList();
   });
   ["filterProject","filterStatus","filterSearch","filterStartAfter","filterEndBefore"].forEach(id=>{
     const n=el(id); 
