@@ -2,28 +2,35 @@
   "projects": [
     {
       "id": "3e86100919c04fb8456",
-      "name": "Bureau Pastorale Rénovation",
+      "name": "Bureau Pastorale",
       "site": "CDM",
       "subproject": "",
       "constraints": ""
     },
     {
       "id": "0c644af019c05700845",
-      "name": "Internat Saint Gervais",
+      "name": "Internat St Gervais",
       "site": "LGT",
-      "subproject": "Rénovation CH 011",
+      "subproject": "",
       "constraints": ""
     },
     {
       "id": "83fac1eb19c15d95804",
       "name": "Salle des profs",
       "site": "CDM",
-      "subproject": "Rénovation",
+      "subproject": "",
       "constraints": ""
     },
     {
-      "id": "d157ceee19c1dbdb6ee",
-      "name": "Nouveau projet",
+      "id": "fd47202319c27a87d06",
+      "name": "Serrures Turboself",
+      "site": "LGT",
+      "subproject": "",
+      "constraints": ""
+    },
+    {
+      "id": "c152982019c284c5446",
+      "name": "Espace SCSE",
       "site": "",
       "subproject": "",
       "constraints": ""
@@ -32,60 +39,146 @@
   "tasks": [
     {
       "id": "c807465d19c05012673",
-      "end": "2026-04-08",
+      "end": "2026-02-10",
       "notes": "",
-      "owner": "Prestataire externe",
-      "start": "2026-04-08",
-      "status": "HUIS_SER",
+      "owner": "Équipe interne",
+      "start": "2026-02-09",
+      "status": "PREPARATION",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Finitions Chassis fixes"
+      "roomNumber": "Rénovation"
     },
     {
       "id": "f490f0e019c0571bee2",
-      "end": "2026-02-14",
+      "end": "2026-02-06",
       "notes": "",
       "owner": "Équipe interne",
-      "start": "2026-02-02",
-      "status": "PEINTURE,TDV,AMENAGEMENTS",
+      "start": "2026-01-26",
+      "status": "ETUDE",
       "projectId": "0c644af019c05700845",
       "roomNumber": "Rénovation CH 011"
     },
     {
-      "id": "840b3cb519c05732884",
-      "end": "2026-02-28",
-      "notes": "",
-      "owner": "Équipe interne",
-      "start": "2026-02-16",
-      "status": "PEINTURE,AMENAGEMENTS,TDV",
-      "projectId": "0c644af019c05700845",
-      "roomNumber": "Rénovation CH 010"
-    },
-    {
       "id": "057fbc5519c1df27433",
-      "end": "2026-02-13",
-      "owner": "Équipe interne",
-      "start": "2026-02-12",
-      "status": "ELECTRICITE",
+      "end": "2026-03-04",
+      "owner": "Prestataire externe",
+      "start": "2026-03-03",
+      "status": "HUIS_SER",
+      "vendor": "MARION",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Dépose/Repose CF/Cf"
+      "roomNumber": "Rénovation"
     },
     {
       "id": "b0fc5a2f19c1e8067ab",
-      "end": "2026-04-06",
-      "owner": "Prestataire externe",
-      "start": "2026-04-06",
-      "status": "HUIS_SER",
+      "end": "2026-03-06",
+      "owner": "Équipe interne",
+      "start": "2026-02-23",
+      "status": "PEINTURE",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Pose Chassis fixes"
+      "roomNumber": "Rénovation"
     },
     {
       "id": "aa4f131519c1e82440b",
       "end": "2026-02-20",
       "owner": "Équipe interne",
-      "start": "2026-02-16",
+      "start": "2026-02-11",
       "status": "ELECTRICITE",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Finitions Chassis fixes"
+      "roomNumber": "Rénovation"
+    },
+    {
+      "id": "8ac26e8a19c221422b0",
+      "end": "2026-02-19",
+      "owner": "Équipe interne",
+      "start": "2026-02-09",
+      "status": "PEINTURE",
+      "projectId": "0c644af019c05700845",
+      "roomNumber": "Rénovation CH 011"
+    },
+    {
+      "id": "32dc025b19c2215340b",
+      "end": "2026-02-27",
+      "owner": "Équipe interne",
+      "start": "2026-02-23",
+      "status": "AMENAGEMENTS",
+      "projectId": "0c644af019c05700845",
+      "roomNumber": "Rénovation CH 011"
+    },
+    {
+      "id": "647eda1319c230944d8",
+      "end": "2026-03-06",
+      "owner": "Prestataire externe",
+      "start": "2026-03-05",
+      "status": "HUIS_SER",
+      "vendor": "MARION",
+      "projectId": "3e86100919c04fb8456",
+      "roomNumber": "Rénovation"
+    },
+    {
+      "id": "92d410e719c23d422cc",
+      "end": "2026-02-06",
+      "owner": "Équipe interne",
+      "start": "2026-01-05",
+      "status": "ETUDE",
+      "vendor": "",
+      "projectId": "83fac1eb19c15d95804",
+      "roomNumber": "Rénovation"
+    },
+    {
+      "id": "75f862d619c241bfe17",
+      "end": "2026-02-06",
+      "owner": "Équipe interne",
+      "start": "2026-02-02",
+      "status": "ETUDE",
+      "projectId": "3e86100919c04fb8456",
+      "roomNumber": "Rénovation"
+    },
+    {
+      "id": "e154d70e19c241cecdb",
+      "end": "2026-03-11",
+      "owner": "Équipe interne",
+      "start": "2026-03-09",
+      "status": "PEINTURE",
+      "projectId": "3e86100919c04fb8456",
+      "roomNumber": "Rénovation"
+    },
+    {
+      "id": "3068784419c27a966e0",
+      "end": "2026-02-09",
+      "owner": "Prestataire externe",
+      "start": "2026-02-09",
+      "status": "HUIS_SER",
+      "vendor": "Turboself",
+      "projectId": "fd47202319c27a87d06",
+      "roomNumber": "Pose des 13 Serrures"
+    },
+    {
+      "id": "218f59dc19c27a9b7be",
+      "end": "2026-02-20",
+      "owner": "Équipe interne",
+      "start": "2026-02-10",
+      "status": "HUIS_SER",
+      "projectId": "fd47202319c27a87d06",
+      "roomNumber": "Pose des 13 Serrures"
+    },
+    {
+      "id": "9380be4319c27b0af51",
+      "end": "2026-03-20",
+      "owner": "Prestataire externe",
+      "start": "2026-03-16",
+      "status": "MOBILIER",
+      "vendor": "DPC",
+      "projectId": "83fac1eb19c15d95804",
+      "roomNumber": "Rénovation"
+    },
+    {
+      "id": "ab36b4d119c284ee0b9",
+      "end": "2026-02-17",
+      "owner": "Prestataire externe",
+      "start": "2026-02-16",
+      "status": "ELECTRICITE",
+      "vendor": "JOUSSET",
+      "projectId": "c152982019c284c5446",
+      "roomNumber": "Aménagements Pro"
     }
   ],
   "ui": {

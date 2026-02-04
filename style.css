@@ -103,6 +103,7 @@ body{
 }
 
 .main{display:flex;flex-direction:column;gap:10px;}
+.main{min-width:0;}
 .panel{
   background:linear-gradient(165deg, rgba(255,255,255,0.97) 0%, rgba(235,232,226,0.9) 45%, rgba(255,255,255,0.99) 100%);
   border:1px solid rgba(255,255,255,0.55);
@@ -361,9 +362,42 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 .week-cell:hover::after{
   opacity:1;
 }
-.gantt-table .table td{padding:4px 6px;line-height:1.1;}
-.gantt-table .table td{vertical-align:middle;}
-.gantt-table .table td{vertical-align:middle;}
+.gantt-table .table td,
+.gantt-table table td{
+  padding:2px 6px;
+  line-height:1.1;
+  vertical-align:middle;
+}
+.gantt-table .table tbody tr,
+.gantt-table table tbody tr{
+  height:24px;
+}
+.gantt-table .table tr,
+.gantt-table table tr{
+  height:auto;
+}
+.gantt-table .table td.gantt-vendor-cell,
+.gantt-table .table td.gantt-status-cell,
+.gantt-table .table td:first-child,
+.gantt-table table td.gantt-vendor-cell,
+.gantt-table table td.gantt-status-cell,
+.gantt-table table td:first-child{
+  background-image:none !important;
+}
+
+/* Grille de fond sur toutes les cellules du Gantt */
+.gantt-table .table,
+.gantt-table table{
+  border-collapse:collapse;
+  table-layout:fixed;
+  width:100%;
+}
+.gantt-table .table td,
+.gantt-table .table th,
+.gantt-table table td,
+.gantt-table table th{
+  border:1px solid rgba(0,0,0,0.2);
+}
 .gantt-bar{height:12px;border-radius:10px;border:1px solid rgba(0,0,0,.22);position:relative;overflow:hidden;}
 .gantt-bar .gantt-days{
   position:absolute;
@@ -381,13 +415,14 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   text-shadow:none;
   white-space:nowrap;
 }
-.gantt-cell{padding:3px 4px !important;}
+.gantt-cell{padding:2px 4px !important;}
 .gantt-cell-inner{
   position:relative;
-  min-height:14px;
+  min-height:16px;
   display:flex;
   flex-direction:column;
   align-items:flex-start;
+  justify-content:center;
   gap:2px;
   width:100%;
 }
@@ -422,21 +457,21 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 
 /* Charge de travail */
 #workloadChart{min-height:200px;}
-.wl-axis text{font-size:11px;fill:#0f172a;font-family:"Century Gothic","Segoe UI",sans-serif;}
+.wl-axis text{font-size:11px;fill:#0f172a;font-family:var(--sans);}
 .wl-bg{fill:#ffffff;}
-.wl-bar-internal{fill:#0f172a;}
-.wl-bar-external{fill:#b45309;}
+.wl-bar-internal{fill:url(#grad-int);}
+.wl-bar-external{fill:url(#grad-ext);}
 .wl-grid{stroke:#e5e7eb;stroke-width:1;}
 .wl-grid-vert{stroke:#e5e7eb;stroke-width:1;stroke-dasharray:2 3;}
-.wl-legend{display:flex;gap:8px;align-items:center;font-size:12px;font-family:"Century Gothic","Segoe UI",sans-serif;}
+.wl-legend{display:flex;gap:8px;align-items:center;font-size:12px;font-family:var(--sans);}
 .wl-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block;}
-.wl-value{font-size:10px;fill:#0f172a;font-family:"Century Gothic","Segoe UI",sans-serif;}
+.wl-value{font-size:10px;fill:#0f172a;font-family:var(--sans);}
 .gantt-status-cell{
   font-size:10px;
   color:#0b1424;
   font-weight:700;
   text-align:left;
-  padding:0 1px;
+  padding:0 6px;
   vertical-align:middle;
 }
 .gantt-status-stack{
@@ -444,12 +479,12 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   flex-direction:column;
   gap:2px;
   justify-content:center;
-  min-height:20px;
+  min-height:16px;
 }
 .gantt-vendor-cell{
   vertical-align:middle;
-  width:120px;
-  position:relative;
+  width:140px;
+  padding:0 6px;
 }
 .gantt-vendor-cell .badge.owner{
   display:inline-flex;
@@ -462,19 +497,25 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   border-radius:10px;
 }
 .gantt-vendor-cell .vendor-stack{
-  position:absolute;
-  top:50%;
-  left:0;
-  transform:translateY(-50%);
   display:flex;
   flex-direction:column;
   gap:2px;
-  width:100%;
+  justify-content:center;
   align-items:flex-start;
+  min-height:16px;
 }
 .gantt-vendor-cell .text-muted{
   color:#6b7280;
   font-size:11px;
+}
+.gantt-task-col{
+  width:44px;
+  min-width:44px;
+  max-width:44px;
+  text-align:center;
+}
+.gantt-task-col + td .gantt-task-name{
+  display:none;
 }
 .vendor-manage-btn{
   position:absolute;
@@ -547,6 +588,9 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   background-image: none !important;
   position:relative;
   padding-right:28px;
+  background:linear-gradient(185deg, rgba(236,234,229,0.97) 0%, rgba(222,220,215,0.9) 100%) !important;
+  box-shadow:inset 0 1px 2px rgba(255,255,255,0.8), inset 0 -1px 2px rgba(0,0,0,0.04) !important;
+  border:1px solid rgba(0,0,0,0.14) !important;
   background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;
   background-position: right 10px center;
@@ -554,10 +598,24 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 }
 #t_vendor::-webkit-calendar-picker-indicator{ display:none !important; }
 #t_vendor::-ms-expand{ display:none !important; }
-}
 .vendor-dropdown{
   display:none;
 }
+.vendor-panel{
+  position:absolute;
+  top:100%;
+  right:0;
+  left:0;
+  margin-top:6px;
+  background:#fff;
+  border:1px solid rgba(0,0,0,0.12);
+  border-radius:10px;
+  box-shadow:0 12px 24px rgba(0,0,0,0.18);
+  padding:10px;
+  z-index:200000;
+}
+.vendor-wrap.vendor-open{z-index:200001;position:relative;}
+.card.vendor-panel-open{z-index:200000;position:relative;}
 .status-row .badge.owner{
   margin-left:auto;
 }
@@ -672,6 +730,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   background:linear-gradient(160deg, rgba(235,233,227,0.95) 0%, rgba(218,215,209,0.9) 45%, rgba(240,238,234,0.97) 100%);
   border:1px solid rgba(0,0,0,0.12);
   box-shadow:0 18px 40px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.55);
+  min-width:0;
 }
 .card{
   background:linear-gradient(190deg, rgba(210,208,202,0.95) 0%, rgba(194,192,186,0.9) 55%, rgba(218,216,211,0.95) 100%);
@@ -683,6 +742,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   overflow:visible;
   position:relative;
   z-index:1;
+  min-width:0;
 }
 .tablewrap{
   border:1px solid rgba(0,0,0,0.12);
@@ -690,7 +750,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   box-shadow:0 10px 22px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.5);
   position:relative;
   z-index:0;
-  overflow:visible;
+  overflow:auto;
 }
 .table th{
   background:linear-gradient(180deg, rgba(232,231,228,0.94) 0%, rgba(214,211,206,0.9) 100%);

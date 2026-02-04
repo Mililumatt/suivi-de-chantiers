@@ -15,7 +15,7 @@
       background-position:right 10px center;
       padding-right:28px;
       cursor:pointer;
-      background:linear-gradient(185deg, rgba(255,255,255,0.98) 0%, rgba(233,231,226,0.9) 100%);
+      background:linear-gradient(185deg, rgba(236,234,229,0.97) 0%, rgba(222,220,215,0.9) 100%);
       box-shadow:inset 0 1px 2px rgba(255,255,255,0.8), inset 0 -1px 2px rgba(0,0,0,0.04);
     }
     #t_vendor::-webkit-calendar-picker-indicator{display:none !important;} #t_vendor::-ms-expand{display:none !important;}
@@ -47,32 +47,31 @@
     .lock-btn{width:100%;padding:9px 10px;border-radius:10px;border:1px solid #2563eb;background:#2563eb;color:#fff;font-weight:700;cursor:pointer;}
     .lock-msg{font-size:12px;color:#6b7280;margin-top:6px;}
     /* gear */
+    .gear-wrap{
+      position:relative;
+      display:flex;
+      align-items:center;
+    }
     #gear-btn{
-      position:fixed;top:10px;right:10px;z-index:100000;
+      position:relative;
       width:34px;height:34px;border-radius:50%;border:1px solid rgba(0,0,0,0.12);
       background:#fff;box-shadow:0 10px 22px rgba(0,0,0,0.18);cursor:pointer;
       display:flex;align-items:center;justify-content:center;font-size:17px;
     }
     #gear-panel{
-      position:fixed;top:52px;right:10px;z-index:100000;
+      position:absolute;top:42px;right:0;z-index:100000;
       background:#fff;padding:10px 12px;border-radius:10px;
       box-shadow:0 12px 24px rgba(0,0,0,0.18);width:230px;
       display:none;gap:8px;flex-direction:column;font-size:12px;
     }
     #gear-panel.show{display:flex;}
-    #gear-panel label{display:flex;align-items:center;gap:6px;font-weight:600;color:#0f172a;}
     #gear-panel small{color:#6b7280;}
-    #gear-panel button{align-self:flex-end;}
+    .gear-actions{display:flex;gap:8px;flex-wrap:wrap;}
+    .gear-actions .btn{display:flex;align-items:center;gap:6px;}
+    .gear-actions svg{width:14px;height:14px;display:block;}
   </style>
 </head>
 <body>
-  <!-- Gear / bypass -->
-  <button id="gear-btn" title="Options accès">⚙️</button>
-  <div id="gear-panel">
-    <label><input type="checkbox" id="ck_disable_lock"> Désactiver le verrou (dev)</label>
-    <small>Réactive pour remettre le verrou au rechargement.</small>
-    <button class="btn btn-ghost" id="btn_relock">Réactiver le verrou</button>
-  </div>
   <!-- Lockscreen -->
   <div id="lockscreen">
     <div class="lock-card">
@@ -90,6 +89,22 @@
     <div class="actions">
       <button class="btn" id="btnExport">Export CSV</button>
       <button class="btn btn-primary" id="btnSave">💾 Sauvegarder</button>
+      <div class="gear-wrap">
+        <button id="gear-btn" title="Options accès">⚙️</button>
+        <div id="gear-panel">
+          <small>Autoriser = déverrouiller. Interdire = verrouiller.</small>
+          <div class="gear-actions">
+            <button class="btn btn-success" id="btn_allow_lock">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a5 5 0 0 1 5 5v3h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h9V7a2 2 0 1 0-4 0v2H8V7a4 4 0 0 1 4-5Z"/></svg>
+              Autoriser
+            </button>
+            <button class="btn btn-danger" id="btn_forbid_lock">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5Zm3 8V7a3 3 0 0 0-6 0v3h6Z"/></svg>
+              Interdire
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -177,16 +192,27 @@
           <div class="card-head" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
             <div class="card-title" style="margin-bottom:0;">Charge de travail</div>
             <div class="row" style="gap:8px;align-items:center;">
-              <label class="label" style="margin-top:0;">Granularité</label>
-              <select class="input" id="workloadGranularity" style="width:120px;">
-                <option value="week">Semaine</option>
-                <option value="day">Jour</option>
+              <label class="label" style="margin-top:0;">Filtre</label>
+              <select class="input" id="workloadRangeType" style="width:140px;">
+                <option value="all">Tout</option>
+                <option value="custom">Période</option>
+                <option value="school">Année scolaire</option>
+                <option value="civil">Année civile</option>
               </select>
+              <select class="input" id="workloadRangeYear" style="width:110px;"></select>
+              <input class="input" id="workloadRangeStart" type="date" style="width:140px;" />
+              <input class="input" id="workloadRangeEnd" type="date" style="width:140px;" />
               <button class="btn" id="btnExportWorkload">Export PDF</button>
             </div>
           </div>
           <div id="workloadChartWrap" style="overflow:auto;">
-            <svg id="workloadChart" width="100%" height="260" viewBox="0 0 900 260"></svg>
+            <svg id="workloadChart" width="100%" height="320" viewBox="0 0 900 320"></svg>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title">Répartition Interne / Externe</div>
+          <div id="workloadPieWrap" style="overflow:auto;">
+            <svg id="workloadPie" width="100%" height="360" viewBox="0 0 720 360"></svg>
           </div>
         </div>
       </section>
@@ -316,8 +342,8 @@
   const btn  = document.getElementById("lock-submit");
   const gear = document.getElementById("gear-btn");
   const panel= document.getElementById("gear-panel");
-  const ck   = document.getElementById("ck_disable_lock");
-  const relockBtn = document.getElementById("btn_relock");
+  const allowBtn = document.getElementById("btn_allow_lock");
+  const forbidBtn = document.getElementById("btn_forbid_lock");
 
   function hash(str){
     const enc = new TextEncoder().encode(str);
@@ -337,34 +363,27 @@
   }
   // gear toggle
   gear.onclick = ()=> panel.classList.toggle("show");
-  relockBtn.onclick = ()=>{
+  allowBtn.onclick = async ()=>{
+    const pass = prompt("Mot de passe pour autoriser ?");
+    if(!pass) return;
+    const h = await hash(pass);
+    if(h===HASH){
+      localStorage.setItem("lock_disabled","1");
+      sessionStorage.setItem("unlocked","1");
+      lock.classList.add("hidden");
+      if(window.setLockState) window.setLockState(false);
+    }else{
+      alert("Mot de passe incorrect");
+    }
+    panel.classList.remove("show");
+  };
+  forbidBtn.onclick = ()=>{
     localStorage.removeItem("lock_disabled");
     sessionStorage.removeItem("unlocked");
-    ck.checked=false;
     panel.classList.remove("show");
     pwd.value="";
     lock.classList.remove("hidden"); // réaffiche immédiatement
     if(window.setLockState) window.setLockState(true);
-  };
-  ck.onchange = async ()=>{
-    if(ck.checked){
-      // demande le mot de passe une fois pour activer le bypass
-      const pass = prompt("Mot de passe pour désactiver le verrou ?");
-      if(!pass){ ck.checked=false; return; }
-      const h = await hash(pass);
-      if(h===HASH){
-        localStorage.setItem("lock_disabled","1");
-        sessionStorage.setItem("unlocked","1");
-        lock.classList.add("hidden");
-        if(window.setLockState) window.setLockState(false);
-      }else{
-        alert("Mot de passe incorrect");
-        ck.checked=false;
-      }
-    }else{
-      localStorage.removeItem("lock_disabled");
-    }
-    panel.classList.remove("show");
   };
   btn.onclick = tryUnlock;
   pwd.onkeydown = (e)=>{ if(e.key==="Enter") tryUnlock(); };
@@ -374,7 +393,6 @@
   const unlocked = sessionStorage.getItem("unlocked")==="1";
   if(disabled || unlocked){
     lock.classList.add("hidden");
-    if(disabled) ck.checked=true;
     if(window.setLockState) window.setLockState(false);
   }else{
     if(window.setLockState) window.setLockState(true);

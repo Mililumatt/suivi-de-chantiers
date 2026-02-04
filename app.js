@@ -156,7 +156,10 @@ let sortMaster = {key:"project", dir:"asc"};
 let sortProject = {key:"num", dir:"asc"};
 let unsavedChanges = false;
 let isLocked = true; // verrou lecture seule par défaut
-let workloadMode = "week";
+let workloadRangeType = "all"; // all | custom | school | civil
+let workloadRangeStart = "";
+let workloadRangeEnd = "";
+let workloadRangeYear = "";
 
 const STATUSES = [
   {v:"CHANTIER_COMPLET", label:"Chantier complet"},
@@ -231,11 +234,18 @@ const ownerType = (o="")=>{
 const ownerBadge = (o="")=>{
   const k = o.toLowerCase();
   // Palette alignée avec le graphique de charge
-  let color = "#0f172a"; // interne par défaut
+  let color = "#16a34a"; // interne par défaut
   if(k.includes("interne") && k.includes("externe")) color = "#b45309"; // mix -> externe
   else if(k.includes("externe")) color = "#b45309"; // prestataire externe
-  else if(k.includes("interne")) color = "#0f172a"; // équipe interne
+  else if(k.includes("interne")) color = "#16a34a"; // équipe interne
   return `<span class="badge owner" style="background:${color};border-color:${color};color:#fff;">${o}</span>`;
+};
+
+const vendorBadge = (v="")=>{
+  const k = v.toLowerCase();
+  const isInternal = k.includes("interne");
+  const color = isInternal ? "#16a34a" : "#4b5563";
+  return `<span class="badge owner" style="background:${color};border-color:${color};color:#fff;">${v}</span>`;
 };
 
 function refreshVendorsList(){
@@ -261,6 +271,14 @@ function refreshVendorsList(){
 function setupVendorPicker(){
   const input = el("t_vendor");
   const manageBtn = el("btnManageVendors");
+  const panel = el("vendorManagerPanel");
+  const wrap = input ? input.closest(".vendor-wrap") : null;
+  const card = input ? input.closest(".card") : null;
+  const setManagerOpen = (open)=>{
+    if(panel) panel.style.display = open ? "block" : "none";
+    wrap?.classList.toggle("vendor-open", !!open);
+    card?.classList.toggle("vendor-panel-open", !!open);
+  };
   if(!input) return;
   const openList = ()=>{
     renderVendorDropdown(input.value);
@@ -282,10 +300,9 @@ function setupVendorPicker(){
   });
   document.addEventListener("click",(e)=>{
     const box = el("vendorDropdown");
-    const panel = el("vendorManagerPanel");
     if(!box || !input) return;
     if(!box.contains(e.target) && e.target!==input){ showVendorDropdown(false); }
-    if(panel && !panel.contains(e.target) && e.target!==manageBtn){ panel.style.display="none"; }
+    if(panel && !panel.contains(e.target) && e.target!==manageBtn){ setManagerOpen(false); }
   });
   const box = el("vendorDropdown");
   if(box){
@@ -296,14 +313,12 @@ function setupVendorPicker(){
     manageBtn.onclick=(e)=>{
       e.stopPropagation();
       if(isLocked) return;
-      const panel = el("vendorManagerPanel");
-      if(!panel) return;
-      const visible = panel.style.display==="block";
+      const visible = panel?.style.display==="block";
       if(visible){
-        panel.style.display="none";
+        setManagerOpen(false);
       }else{
         renderVendorManager();
-        panel.style.display="block";
+        setManagerOpen(true);
         showVendorDropdown(false);
       }
     };
@@ -700,6 +715,13 @@ function setLockState(flag){
     if(isLocked) n.setAttribute("aria-disabled","true");
     else n.removeAttribute("aria-disabled");
   });
+  // boutons dangereux (supprimer) : forcer disable en mode verrou
+  const dangerBtns = document.querySelectorAll("button.btn-danger");
+  dangerBtns.forEach(btn=>{
+    btn.classList.toggle(lockClass, isLocked);
+    if(isLocked) btn.setAttribute("disabled","disabled");
+    else btn.removeAttribute("disabled");
+  });
   // visuel live
   const live = el("masterLive");
   if(live){
@@ -714,16 +736,95 @@ function setLockState(flag){
 function statusLabels(values){
   return parseStatuses(values).map(v=> (STATUSES.find(s=>s.v===v)?.label || v)).join(", ");
 }
+function toDateInput(d){
+  if(!d) return "";
+  const x = new Date(d.getTime());
+  return x.toISOString().slice(0,10);
+}
+function parseInputDate(v){
+  if(!v) return null;
+  const d = new Date(v+"T00:00:00");
+  return isNaN(d) ? null : d;
+}
+function getTasksDateBounds(tasks){
+  let min=null, max=null;
+  tasks.forEach(t=>{
+    if(!t.start || !t.end) return;
+    const s = parseInputDate(t.start);
+    const e = parseInputDate(t.end);
+    if(!s || !e) return;
+    if(!min || s < min) min = s;
+    if(!max || e > max) max = e;
+  });
+  return {min,max};
+}
+function getWorkloadRange(tasks, boundsTasks=tasks){
+  const {min, max} = getTasksDateBounds(boundsTasks);
+  if(!min || !max) return {start:null,end:null};
+  const type = workloadRangeType || "all";
+  if(type==="all"){
+    return {start:min, end:max};
+  }
+  if(type==="custom"){
+    const s = parseInputDate(workloadRangeStart) || min;
+    const e = parseInputDate(workloadRangeEnd) || max;
+    return {start:s, end:e};
+  }
+  const year = parseInt(workloadRangeYear || String(min.getFullYear()),10);
+  if(type==="civil"){
+    return {start:new Date(year,0,1), end:new Date(year,11,31)};
+  }
+  // school: 1er sept -> 31 août
+  return {start:new Date(year,8,1), end:new Date(year+1,7,31)};
+}
+function syncWorkloadFilterUI(tasks, boundsTasks=tasks){
+  const typeSel = el("workloadRangeType");
+  const yearSel = el("workloadRangeYear");
+  const startInput = el("workloadRangeStart");
+  const endInput = el("workloadRangeEnd");
+  if(!typeSel || !yearSel || !startInput || !endInput) return;
+  const {min, max} = getTasksDateBounds(boundsTasks);
+  if(!min || !max) return;
+  const minYear = min.getFullYear() - 1;
+  const maxYear = max.getFullYear() + 1;
+  if(!workloadRangeYear) workloadRangeYear = String(min.getFullYear());
+  if(!workloadRangeStart) workloadRangeStart = toDateInput(min);
+  if(!workloadRangeEnd) workloadRangeEnd = toDateInput(max);
+  // options année
+  let opts="";
+  for(let y=minYear; y<=maxYear; y++){
+    opts += `<option value="${y}">${y}</option>`;
+  }
+  yearSel.innerHTML = opts;
+  yearSel.value = workloadRangeYear;
+  typeSel.value = workloadRangeType || "all";
+  startInput.value = workloadRangeStart;
+  endInput.value = workloadRangeEnd;
+  const showDates = (typeSel.value==="custom");
+  const showYear = (typeSel.value==="civil" || typeSel.value==="school");
+  startInput.style.display = showDates ? "inline-block" : "none";
+  endInput.style.display = showDates ? "inline-block" : "none";
+  yearSel.style.display = showYear ? "inline-block" : "none";
+}
+function isWeekday(d){
+  const day = d.getDay();
+  return day >= 1 && day <= 5; // lundi-vendredi
+}
+function countWeekdays(start, end){
+  if(!start || !end || end < start) return 0;
+  let count = 0;
+  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+    if(isWeekday(d)) count += 1;
+  }
+  return count;
+}
 function durationDays(start,end){
   if(!start || !end) return "";
   const s=new Date(start+"T00:00:00");
   const e=new Date(end+"T00:00:00");
   if(isNaN(s) || isNaN(e) || e<s) return "";
-  const days=new Set();
-  for(let d=new Date(s); d<=e; d.setDate(d.getDate()+1)){
-    days.add(d.toISOString().slice(0,10));
-  }
-  return days.size>0 ? days.size : "";
+  const days = countWeekdays(s, e);
+  return days>0 ? days : "";
 }
 function taskTitle(t){
   const p = state?.projects?.find(x=>x.id===t.projectId);
@@ -785,12 +886,19 @@ function overlapDays(aStart,aEnd,bStart,bEnd){
   return Math.floor(diff)+1;
 }
 function barGeometry(taskStart, taskEnd, weekStart){
-  const weekEnd = addDays(weekStart,6);
-  const days = overlapDays(taskStart, taskEnd, weekStart, weekEnd);
+  const weekEnd = addDays(weekStart,4); // semaine ouvrée
+  const start = taskStart > weekStart ? taskStart : weekStart;
+  const end = taskEnd < weekEnd ? taskEnd : weekEnd;
+  const days = countWeekdays(start, end);
   if(days<=0) return {days:0,width:0,offset:0};
-  const offsetDays = Math.max(0, (taskStart.getTime() - weekStart.getTime())/(1000*60*60*24));
-  const offsetPct  = Math.min(100, (offsetDays/7)*100);
-  let widthPct = (days/7)*100;
+  let offsetDays = 0;
+  if(taskStart > weekStart){
+    const offsetEnd = addDays(taskStart, -1);
+    const offsetLimit = offsetEnd < weekEnd ? offsetEnd : weekEnd;
+    offsetDays = countWeekdays(weekStart, offsetLimit);
+  }
+  const offsetPct  = Math.min(100, (offsetDays/5)*100);
+  let widthPct = (days/5)*100;
   // éviter dépassement au-delà de la cellule
   if(offsetPct + widthPct > 100) widthPct = 100 - offsetPct;
   widthPct = Math.max(12, Math.min(100, widthPct));
@@ -820,7 +928,7 @@ function keyToLabel(key, mode){
   return key;
 }
 
-function computeWorkloadData(tasks, mode="week"){
+function computeWorkloadData(tasks, mode="week", rangeStart=null, rangeEnd=null){
   const map = new Map(); // key -> {internal, external, total, anchor}
   tasks.filter(t=>t.start && t.end).forEach(t=>{
     const start=new Date(t.start+"T00:00:00");
@@ -828,6 +936,9 @@ function computeWorkloadData(tasks, mode="week"){
     if(isNaN(start)||isNaN(end)|| end<start) return;
     const typ = ownerType(t.owner);
     for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+      if(!isWeekday(d)) continue;
+      if(rangeStart && d < rangeStart) continue;
+      if(rangeEnd && d > rangeEnd) continue;
       const key = mode==="day" ? d.toISOString().slice(0,10) : weekKey(d);
       const anchor = mode==="day" ? d.getTime() : startOfWeek(d).getTime();
       if(!map.has(key)) map.set(key,{internal:0,external:0,total:0,anchor});
@@ -881,7 +992,7 @@ function renderGantt(projectId){
   });
 
   let html="<div class='tablewrap gantt-table'><table class='table'>";
-  html+="<thead><tr><th style='width:190px'>Tâche</th><th style='width:120px'>Prestataire</th><th style='width:70px'>Statut</th>";
+  html+="<thead><tr><th class='gantt-task-col'>Tâche</th><th style='width:120px'>Prestataire</th><th style='width:70px'>Statut</th>";
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
@@ -891,94 +1002,36 @@ function renderGantt(projectId){
   });
   html+="</tr></thead><tbody>";
 
-  // Regrouper : même Nom de projet + même Description => même ligne
-  const lanesMap = new Map();
+  // 1 ligne par tâche (plus de regroupement)
   tasks.forEach(t=>{
-    const title = ganttLaneTitle(t);
-    const key = title.toLowerCase() || "no-title";
-    if(!lanesMap.has(key)) lanesMap.set(key,{title, tasks:[]});
-    lanesMap.get(key).tasks.push(t);
-  });
-  const lanes = Array.from(lanesMap.values());
-  lanes.forEach(l=>{
-    l.tasks.sort((a,b)=>{
-      const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
-      if(sa!==sb) return sa-sb;
-      const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
-      if(ea!==eb) return ea-eb;
-      return (a.roomNumber||"").localeCompare(b.roomNumber||"");
-    });
-  });
-  lanes.sort((a,b)=>{
-    const ma = Math.min(...a.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
-    const mb = Math.min(...b.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
-    if(ma!==mb) return ma-mb;
-    const oa = Math.min(...a.tasks.map(t=>taskOrderMap[t.id]||9999));
-    const ob = Math.min(...b.tasks.map(t=>taskOrderMap[t.id]||9999));
-    if(oa!==ob) return oa-ob;
-    return a.title.localeCompare(b.title);
-  });
+    const statuses = parseStatuses(t.status).map(v=>v.toUpperCase());
+    const mainStatus = statuses[0] || "";
+    const color = STATUS_COLORS[mainStatus] || "#1f2937";
+    const ownerBadges = t.owner ? ownerBadge(t.owner) : "";
+    const vendorBadges = (()=> {
+      const set = new Set();
+      if(t.vendor) set.add(t.vendor);
+      if((t.owner||"").toLowerCase().includes("interne")) set.add("Équipe interne");
+      if(set.size===0) return "<span class='text-muted'>—</span>";
+      return Array.from(set).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}))
+        .map(v=>vendorBadge(v)).join(" ");
+    })();
 
-  lanes.forEach(lane=>{
-    const firstTask = lane.tasks[0];
-    const firstStatus = parseStatuses(firstTask.status)[0]?.toUpperCase();
-    const c = STATUS_COLORS[firstStatus] || "#1f2937";
-    const owners = Array.from(new Set(lane.tasks.map(t=>t.owner).filter(Boolean)));
-    const ownerBadgeHtml = owners.map(o=>ownerBadge(o)).join(" ");
-
-    const statusSet = new Set();
-    lane.tasks.forEach(t=> parseStatuses(t.status).forEach(v=> statusSet.add(v.toUpperCase())));
-    const lineStatuses = Array.from(statusSet).sort((a,b)=>{
-      const minA = Math.min(...lane.tasks.filter(t=>parseStatuses(t.status).map(x=>x.toUpperCase()).includes(a)).map(t=>Date.parse(t.start||"9999-12-31")));
-      const minB = Math.min(...lane.tasks.filter(t=>parseStatuses(t.status).map(x=>x.toUpperCase()).includes(b)).map(t=>Date.parse(t.start||"9999-12-31")));
-      if(minA!==minB) return minA-minB;
-      const ia = STATUSES.findIndex(s=>s.v===a);
-      const ib = STATUSES.findIndex(s=>s.v===b);
-      return (ia<0?999:ia)-(ib<0?999:ib);
-    });
-    const statusText = lineStatuses
-      .map(v=> STATUSES.find(s=>s.v===v)?.label || v)
-      .map(txt=>`<div class="status-row"><span>${txt}</span></div>`)
-      .join("");
-
-    let vendors = Array.from(new Set(lane.tasks.map(t=>t.vendor||"").filter(Boolean))).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
-    if(vendors.length===0){
-      const hasInternal = lane.tasks.some(t=> (t.owner||"").toLowerCase().includes("interne"));
-      if(hasInternal) vendors = ["Équipe interne"];
-    }
-    const vendorHtml = vendors.length ? vendors.map(v=>`<span class="badge owner" style="background:#4b5563;border-color:#4b5563;color:#fff;">${v}</span>`).join(" ") : "<span class='text-muted'>—</span>";
-
-    html+=`<tr data-lane="${lane.title}">`;
-    html+=`<td><b><span class="num-badge" style="--badge-color:${c};--badge-text:#fff;">${taskOrderMap[firstTask.id]||""}</span> <span class="icon-picto">📌</span> ${lane.title}</b><div class="gantt-meta">${ownerBadgeHtml}</div></td>`;
-    html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorHtml}</div></td>`;
-    html+=`<td class="gantt-status-cell"><div class="gantt-status-stack">${statusText}</div></td>`;
+    html+=`<tr data-task="${t.id}">`;
+    html+=`<td><b><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span></b></td>`;
+    html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorBadges}</div></td>`;
+    html+=`<td class="gantt-status-cell"><div class="gantt-status-stack"><div class="status-row"><span>${statusLabels(mainStatus)}</span></div></div></td>`;
 
     weeks.forEach(w=>{
-      // une ligne fixe par statut pour garantir l'alignement vertical
-      const cellRows = lineStatuses.map(st=>{
-        // prendre toutes les barres de ce statut sur la semaine
-        const bars = lane.tasks
-          .filter(t=>parseStatuses(t.status).map(v=>v.toUpperCase()).includes(st))
-          .map(t=>{
-            const sDate=new Date(t.start+"T00:00:00");
-            const eDate=new Date(t.end+"T00:00:00");
-            const geo=barGeometry(sDate,eDate,w);
-            const order=Date.parse(t.start||"9999-12-31");
-            return {geo,taskId:t.id,order,vendor:t.vendor||""};
-          })
-          .filter(x=>x.geo.days>0)
-          .sort((a,b)=>a.order-b.order);
-
-        if(bars.length===0) return `<div class="gantt-row"><div class="gantt-spacer"></div></div>`;
-        const color = STATUS_COLORS[st] || "#1f2937";
-        const barHtml = bars.map(seg=>{
-          const title = seg.vendor ? ` title="Prestataire : ${attrEscape(seg.vendor)}"` : "";
-          return `<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}"${title} style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`;
-        }).join("");
-        return `<div class="gantt-row">${barHtml}</div>`;
-      }).join("");
-
-      html+=`<td class="gantt-cell"><div class="gantt-cell-inner">${cellRows || `<div class="gantt-spacer"></div>`}</div></td>`;
+      const sDate=new Date(t.start+"T00:00:00");
+      const eDate=new Date(t.end+"T00:00:00");
+      const geo=barGeometry(sDate,eDate,w);
+      if(geo.days>0){
+        const title = t.vendor ? ` title="Prestataire : ${attrEscape(t.vendor)}"` : "";
+        html+=`<td class="gantt-cell"><div class="gantt-cell-inner"><div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${t.id}" data-status="${mainStatus}"${title} style="width:${geo.width}%;margin-left:${geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${geo.days} j</span></div></div></div></td>`;
+      }else{
+        html+=`<td class="gantt-cell"><div class="gantt-cell-inner"><div class="gantt-spacer"></div></div></td>`;
+      }
     });
 
     html+="</tr>";
@@ -1037,6 +1090,7 @@ function renderProjectTasks(projectId){
   }
 }
 
+// Nouvelle version : 1 tâche = 1 ligne dans le gantt maître
 function renderMasterGantt(){
   const wrap = el("masterGantt");
   if(!wrap) return;
@@ -1045,13 +1099,11 @@ function renderMasterGantt(){
     wrap.innerHTML = "<div class='gantt-empty'>Aucune tâche datée.</div>";
     return;
   }
-
   const minStart = tasks.map(t=>new Date(t.start+"T00:00:00")).reduce((a,b)=>a<b?a:b);
   const maxEnd   = tasks.map(t=>new Date(t.end+"T00:00:00")).reduce((a,b)=>a>b?a:b);
   const weeks=[];
   for(let w=startOfWeek(minStart); w<=addDays(startOfWeek(maxEnd),0); w=addDays(w,7)) weeks.push(new Date(w));
 
-  // tri pour conserver l'ordre visuel stable
   tasks.sort((a,b)=>{
     const oa=(taskOrderMap[a.id]||9999)-(taskOrderMap[b.id]||9999);
     if(oa!==0) return oa;
@@ -1061,7 +1113,7 @@ function renderMasterGantt(){
   });
 
   let html="<div class='tablewrap gantt-table'><table class='table'>";
-  html+="<thead><tr><th style='width:150px'>Tâche</th><th style='width:120px'>Prestataire</th><th style='width:24px'>Statut</th>";
+  html+="<thead><tr><th style='width:150px'>Tâche</th><th style='width:140px'>Prestataire</th><th style='width:90px'>Statut</th>";
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
@@ -1071,92 +1123,36 @@ function renderMasterGantt(){
   });
   html+="</tr></thead><tbody>";
 
-  // Regrouper : même Nom de projet + même Description => même ligne
-  const lanesMap = new Map();
   tasks.forEach(t=>{
-    const title = ganttLaneTitle(t);
-    const key = title.toLowerCase() || "no-title";
-    if(!lanesMap.has(key)) lanesMap.set(key,{title, tasks:[]});
-    lanesMap.get(key).tasks.push(t);
-  });
-  const lanes = Array.from(lanesMap.values());
-  lanes.forEach(l=>{
-    l.tasks.sort((a,b)=>{
-      const sa=Date.parse(a.start||"9999-12-31"), sb=Date.parse(b.start||"9999-12-31");
-      if(sa!==sb) return sa-sb;
-      const ea=Date.parse(a.end||"9999-12-31"), eb=Date.parse(b.end||"9999-12-31");
-      if(ea!==eb) return ea-eb;
-      return (a.roomNumber||"").localeCompare(b.roomNumber||"");
-    });
-  });
-  lanes.sort((a,b)=>{
-    const ma = Math.min(...a.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
-    const mb = Math.min(...b.tasks.map(t=>Date.parse(t.start||"9999-12-31")));
-    if(ma!==mb) return ma-mb;
-    const oa = Math.min(...a.tasks.map(t=>taskOrderMap[t.id]||9999));
-    const ob = Math.min(...b.tasks.map(t=>taskOrderMap[t.id]||9999));
-    if(oa!==ob) return oa-ob;
-    return a.title.localeCompare(b.title);
-  });
+    const statuses = parseStatuses(t.status).map(v=>v.toUpperCase());
+    const mainStatus = statuses[0] || "";
+    const color = STATUS_COLORS[mainStatus] || "#1f2937";
+    const p = state?.projects?.find(x=>x.id===t.projectId);
+    const projectName = (p?.name || "Projet").trim() || "Projet";
+    const vendorBadges = (()=> {
+      const set = new Set();
+      if(t.vendor) set.add(t.vendor);
+      if((t.owner||"").toLowerCase().includes("interne")) set.add("Équipe interne");
+      if(set.size===0) return "<span class='text-muted'>—</span>";
+      return Array.from(set).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}))
+        .map(v=>vendorBadge(v)).join(" ");
+    })();
 
-  lanes.forEach(lane=>{
-    const firstTask = lane.tasks[0];
-    const firstStatus = parseStatuses(firstTask.status)[0]?.toUpperCase();
-    const c = STATUS_COLORS[firstStatus] || "#1f2937";
-    const owners = Array.from(new Set(lane.tasks.map(t=>t.owner).filter(Boolean)));
-    const ownerBadgeHtml = owners.map(o=>ownerBadge(o)).join(" ");
-
-    const statusSet=new Set();
-    lane.tasks.forEach(t=> parseStatuses(t.status).forEach(v=>statusSet.add(v.toUpperCase())));
-    const lineStatuses = STATUSES.map(s=>s.v).filter(v=>statusSet.has(v)).sort((a,b)=>{
-      const minA = Math.min(...lane.tasks.filter(t=>parseStatuses(t.status).map(x=>x.toUpperCase()).includes(a)).map(t=>Date.parse(t.start||"9999-12-31")));
-      const minB = Math.min(...lane.tasks.filter(t=>parseStatuses(t.status).map(x=>x.toUpperCase()).includes(b)).map(t=>Date.parse(t.start||"9999-12-31")));
-      if(minA!==minB) return minA-minB;
-      const ia = STATUSES.findIndex(s=>s.v===a);
-      const ib = STATUSES.findIndex(s=>s.v===b);
-      return (ia<0?999:ia)-(ib<0?999:ib);
-    });
-    const statusText = lineStatuses
-      .map(v=> STATUSES.find(s=>s.v===v)?.label || v)
-      .map(txt=>`<div class="status-row"><span>${txt}</span></div>`)
-      .join("");
-
-    let vendors = Array.from(new Set(lane.tasks.map(t=>t.vendor||"").filter(Boolean))).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
-    if(vendors.length===0){
-      const hasInternal = lane.tasks.some(t=> (t.owner||"").toLowerCase().includes("interne"));
-      if(hasInternal) vendors = ["Équipe interne"];
-    }
-    const vendorHtml = vendors.length ? vendors.map(v=>`<span class="badge owner" style="background:#4b5563;border-color:#4b5563;color:#fff;">${v}</span>`).join(" ") : "<span class='text-muted'>—</span>";
-
-    html+=`<tr data-lane="${lane.title}">`;
-    html+=`<td><b><span class="num-badge" style="--badge-color:${c};--badge-text:#fff;">${taskOrderMap[firstTask.id]||""}</span> <span class="icon-picto">📌</span> ${lane.title}</b><div class="gantt-meta">${ownerBadgeHtml}</div></td>`;
-    html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorHtml}</div></td>`;
-    html+=`<td class="gantt-status-cell"><div class="gantt-status-stack">${statusText}</div></td>`;
+    html+=`<tr data-task="${t.id}">`;
+    html+=`<td><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span> <span class="gantt-task-name">${attrEscape(projectName)}</span></td>`;
+    html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorBadges}</div></td>`;
+    html+=`<td class="gantt-status-cell"><div class="gantt-status-stack"><div class="status-row"><span>${statusLabels(mainStatus)}</span></div></div></td>`;
 
     weeks.forEach(w=>{
-  const rows = lineStatuses.map(st=>{
-        const bars = lane.tasks
-          .filter(t=> parseStatuses(t.status).map(v=>v.toUpperCase()).includes(st))
-          .map(t=>{
-            const sDate=new Date(t.start+"T00:00:00");
-            const eDate=new Date(t.end+"T00:00:00");
-            const geo=barGeometry(sDate,eDate,w);
-            const order=Date.parse(t.start||"9999-12-31");
-            return {geo,taskId:t.id,order,vendor:t.vendor||""};
-          })
-          .filter(x=>x.geo.days>0)
-          .sort((a,b)=>a.order-b.order);
-
-        if(bars.length===0) return `<div class="gantt-row"><div class="gantt-spacer"></div></div>`;
-        const color = STATUS_COLORS[st] || "#1f2937";
-        const barHtml = bars.map(seg=>{
-          const title = seg.vendor ? ` title="Prestataire : ${attrEscape(seg.vendor)}"` : "";
-          return `<div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${seg.taskId}" data-status="${st}"${title} style="width:${seg.geo.width}%;margin-left:${seg.geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${seg.geo.days} j</span></div></div>`;
-        }).join("");
-        return `<div class="gantt-row">${barHtml}</div>`;
-      }).join("");
-
-      html+=`<td class="gantt-cell"><div class="gantt-cell-inner">${rows || `<div class="gantt-spacer"></div>`}</div></td>`;
+      const sDate=new Date(t.start+"T00:00:00");
+      const eDate=new Date(t.end+"T00:00:00");
+      const geo=barGeometry(sDate,eDate,w);
+      if(geo.days>0){
+        const title = t.vendor ? ` title="Prestataire : ${attrEscape(t.vendor)}"` : "";
+        html+=`<td class="gantt-cell"><div class="gantt-cell-inner"><div class="bar-wrapper"><div class="gantt-bar bar-click" data-task="${t.id}" data-status="${mainStatus}"${title} style="width:${geo.width}%;margin-left:${geo.offset}%;background:${color};border-color:${color}"><span class="gantt-days">${geo.days} j</span></div></div></div></td>`;
+      }else{
+        html+=`<td class="gantt-cell"><div class="gantt-cell-inner"><div class="gantt-spacer"></div></div></td>`;
+      }
     });
 
     html+="</tr>";
@@ -1183,11 +1179,11 @@ function exportSvgToPdf(svgId, title="Export"){
   // Cloner et injecter le style indispensable pour l'export (sinon le SVG perd ses classes).
   const clone = svg.cloneNode(true);
   const inlineStyle = `
-    * { font-family: "Century Gothic", "Segoe UI", sans-serif; }
+    * { font-family: "Segoe UI", Arial, sans-serif; }
     .wl-axis text{font-size:11px;fill:#0f172a;}
-    .wl-bg{fill:#ffffff;}
-    .wl-bar-internal{fill:#0f172a;}
-    .wl-bar-external{fill:#b45309;}
+    .wl-bg{fill:url(#brushed);}
+    .wl-bar-internal{fill:url(#grad-int);}
+    .wl-bar-external{fill:url(#grad-ext);}
     .wl-grid{stroke:#e5e7eb;stroke-width:1;}
     .wl-grid-vert{stroke:#e5e7eb;stroke-width:1;stroke-dasharray:2 3;}
     .wl-value{font-size:10px;fill:#0f172a;}
@@ -1202,6 +1198,7 @@ function exportSvgToPdf(svgId, title="Export"){
   const url = URL.createObjectURL(blob);
   const img = new Image();
   const { width, height } = svg.getBoundingClientRect();
+  const pieSvg = document.getElementById("workloadPie");
   const fallbackWidth = svg.viewBox?.baseVal?.width || svg.clientWidth || 900;
   const fallbackHeight = svg.viewBox?.baseVal?.height || svg.clientHeight || 260;
   img.onload = function(){
@@ -1213,26 +1210,80 @@ function exportSvgToPdf(svgId, title="Export"){
     ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(img,0,0,canvas.width,canvas.height);
     const data = canvas.toDataURL("image/png");
+    const pieData = pieSvg ? (()=> {
+      const pieClone = pieSvg.cloneNode(true);
+      const pieStyle = document.createElement("style");
+      pieStyle.textContent = inlineStyle;
+      pieClone.insertBefore(pieStyle, pieClone.firstChild);
+      const pieStr = serializer.serializeToString(pieClone);
+      const pieBlob = new Blob([pieStr], {type:"image/svg+xml;charset=utf-8"});
+      return URL.createObjectURL(pieBlob);
+    })() : "";
     const w = window.open("","_blank");
     if(!w) return;
+    const nowLabel = new Date().toLocaleDateString("fr-FR");
+    const sourceTasks = filteredTasks();
+    const range = getWorkloadRange(sourceTasks, state.tasks || sourceTasks);
+    const totals = computeWorkloadData(sourceTasks || [], "week", range.start, range.end);
+    const tInt = totals.reduce((s,d)=>s+d.internal,0);
+    const tExt = totals.reduce((s,d)=>s+d.external,0);
+    const tAll = Math.max(1, tInt + tExt);
+    const pInt = Math.round((tInt/tAll)*100);
+    const pExt = 100 - pInt;
     // Mise en page A4 paysage + centrage
     w.document.write(`
       <title>${title}</title>
       <style>
         @page { size: A4 landscape; margin: 10mm; }
-        body{margin:0;padding:0;display:flex;flex-direction:column;align-items:center;font-family:"Century Gothic","Segoe UI",sans-serif;background:#fff;}
-        h1{font-size:16px;margin:12px 0;text-align:center;}
-        .img-wrap{width:100%;display:flex;justify-content:center;padding:10mm 12mm 12mm;}
+        :root{--green:#16a34a;--gray:#4b5563;--ink:#0b1424;}
+        body{margin:0;padding:0;display:flex;flex-direction:column;align-items:center;font-family:"Segoe UI",Arial,sans-serif;background:#fff;color:var(--ink);}
+        .page{width:100%;box-sizing:border-box;padding:6mm 8mm 8mm;}
+        .header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #d1d5db;padding-bottom:6px;margin-bottom:6px;}
+        h1{font-size:18px;margin:0;}
+        .meta{font-size:10px;color:#475569;text-align:right;}
+        .subtitle{font-size:11px;color:#475569;margin-top:2px;}
+        .legend{display:flex;gap:10px;align-items:center;margin:6px 0 8px;}
+        .legend .item{display:flex;align-items:center;gap:6px;font-size:11px;}
+        .dot{width:10px;height:10px;border-radius:4px;display:inline-block;}
+        .dot.int{background:var(--green);}
+        .dot.ext{background:var(--gray);}
+        .frame{border:1px solid #e5e7eb;border-radius:10px;padding:6mm;background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);}
+        .pie-frame{margin-top:6mm;border:1px solid #e5e7eb;border-radius:10px;padding:6mm;background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);}
+        .img-wrap{width:100%;display:flex;justify-content:center;}
         img{max-width:100%;height:auto;}
+        .footer{margin-top:6px;font-size:10px;color:#64748b;display:flex;justify-content:space-between;}
       </style>
-      <h1>${title} (jours)</h1>
-      <div class="img-wrap"><img id="__print_img" src="${data}" aria-label="${title}"></div>
+      <div class="page">
+        <div class="header">
+          <div>
+            <h1>${title}</h1>
+            <div class="subtitle">Charge de travail • Unité : jours ouvrés</div>
+          </div>
+          <div class="meta">Export du ${nowLabel}</div>
+        </div>
+        <div class="legend">
+          <div class="item"><span class="dot int"></span>Équipe interne ${pInt}%</div>
+          <div class="item"><span class="dot ext"></span>Prestataire externe ${pExt}%</div>
+        </div>
+        <div class="frame">
+          <div class="img-wrap"><img id="__print_img" src="${data}" aria-label="${title}"></div>
+        </div>
+        ${pieData ? `<div class="pie-frame"><div class="img-wrap"><img id="__pie_img" src="${pieData}" aria-label="Répartition interne/externe"></div></div>` : ""}
+        <div class="footer">
+          <span>Source : Suivi de Chantiers</span>
+          <span>PDF A4 paysage</span>
+        </div>
+      </div>
     `);
     w.document.close();
     const targetImg = w.document.getElementById("__print_img");
+    const targetPie = w.document.getElementById("__pie_img");
     let printed=false;
     const launchPrint = ()=>{
       if(printed) return;
+      const readyMain = targetImg && targetImg.complete;
+      const readyPie = !targetPie || targetPie.complete;
+      if(!(readyMain && readyPie)) return;
       printed=true;
       w.focus();
       w.print();
@@ -1250,32 +1301,44 @@ function exportSvgToPdf(svgId, title="Export"){
     }else{
       launchPrint();
     }
+    if(targetPie && !targetPie.complete){
+      targetPie.addEventListener("load", ()=>launchPrint(), { once:true });
+    }
   };
   img.src = url;
 }
 
 function renderWorkloadChart(tasks){
-  const select = el("workloadGranularity");
-  const mode = select?.value || workloadMode || "week";
-  workloadMode = mode;
-  const data = computeWorkloadData(tasks, mode);
+  const mode = "week";
+  syncWorkloadFilterUI(tasks, state.tasks || tasks);
+  const range = getWorkloadRange(tasks, state.tasks || tasks);
+  const data = computeWorkloadData(tasks, mode, range.start, range.end);
   const svg = el("workloadChart");
   if(!svg) return;
-  const w=900, h=260, m={l:60,r:24,t:30,b:54};
-  const fontFamily = `"Century Gothic","Segoe UI",sans-serif`;
+  const w=900, h=320, m={l:60,r:24,t:30,b:64};
+  const fontFamily = `"Segoe UI", Arial, sans-serif`;
   svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
   svg.style.fontFamily = fontFamily;
   svg.setAttribute("font-family", fontFamily);
   svg.innerHTML="";
+  const pieSvg = el("workloadPie");
   if(data.length===0){
     svg.innerHTML = `<text x="${w/2}" y="${h/2}" text-anchor="middle" fill="#6b7280" font-size="12">Aucune tâche datée</text>`;
+    if(pieSvg){
+      pieSvg.setAttribute("viewBox", "0 0 720 360");
+      pieSvg.innerHTML = `<text x="360" y="180" text-anchor="middle" fill="#6b7280" font-size="12">Aucune donnée</text>`;
+    }
     return;
   }
   const maxVal = niceMax(Math.max(...data.map(d=>d.total),1));
   const chartW = w - m.l - m.r;
   const chartH = h - m.t - m.b;
-  const barGap = 6;
-  const barW = Math.max(8, Math.min(60, (chartW / data.length) - barGap));
+  const isDay = mode === "day";
+  const groupGap = 8;
+  const innerGap = 4;
+  const groupW = Math.max(26, Math.min(90, (chartW / data.length) - groupGap));
+  const barW = Math.max(10, (groupW - innerGap) / 2);
+  const labelEvery = 1;
   const xStart = m.l;
   let grid="";
   const ticks=4;
@@ -1287,43 +1350,121 @@ function renderWorkloadChart(tasks){
   }
   // vertical guides
   data.forEach((d,idx)=>{
-    const x = xStart + idx*(barW+barGap) + barW/2;
-    grid+=`<line class="wl-grid-vert" x1="${x}" y1="${m.t}" x2="${x}" y2="${m.t+chartH}"></line>`;
+    const gx = xStart + idx*(groupW+groupGap) + groupW/2;
+    grid+=`<line class="wl-grid-vert" x1="${gx}" y1="${m.t}" x2="${gx}" y2="${m.t+chartH}"></line>`;
   });
 
   let bars="";
   data.forEach((d,idx)=>{
-    const x = xStart + idx*(barW+barGap);
-    let y = m.t + chartH;
+    const gx = xStart + idx*(groupW+groupGap);
+    const xInt = gx;
+    const xExt = gx + barW + innerGap;
     const hInt = (d.internal/maxVal)*chartH;
     const hExt = (d.external/maxVal)*chartH;
-    y -= hInt;
-    bars+=`<rect class="wl-bar-internal" fill="url(#grad-int)" x="${x}" y="${y}" width="${barW}" height="${hInt}" rx="4" ry="4"></rect>`;
-    y -= hExt;
-    bars+=`<rect class="wl-bar-external" fill="url(#grad-ext)" x="${x}" y="${y}" width="${barW}" height="${hExt}" rx="4" ry="4"></rect>`;
+    const yBase = m.t + chartH;
+    const yInt = yBase - hInt;
+    const yExt = yBase - hExt;
+    bars+=`<rect class="wl-bar-internal" fill="url(#grad-int)" filter="url(#barShadow)" x="${xInt}" y="${yInt}" width="${barW}" height="${hInt}" rx="3" ry="3"></rect>`;
+    bars+=`<rect class="wl-bar-external" fill="url(#grad-ext)" filter="url(#barShadow)" x="${xExt}" y="${yExt}" width="${barW}" height="${hExt}" rx="3" ry="3"></rect>`;
     const lbl = keyToLabel(d.key, mode);
-    const lx = x + barW/2;
+    const lx = gx + groupW/2;
     const ly = h - m.b + 14;
     bars+=`<text class="wl-axis" x="${lx}" y="${ly}" text-anchor="middle">${lbl}</text>`;
-    bars+=`<text class="wl-value" x="${lx}" y="${m.t + chartH - (d.total/maxVal)*chartH - 6}" text-anchor="middle">${d.total} j</text>`;
+    const valueYInt = Math.max(m.t + 12, yBase - Math.max(hInt, 0) - 8);
+    const valueYExt = Math.max(m.t + 12, yBase - Math.max(hExt, 0) - 8);
+    bars+=`<text class="wl-value" x="${xInt + barW/2}" y="${valueYInt}" text-anchor="middle">${d.internal} j</text>`;
+    bars+=`<text class="wl-value" x="${xExt + barW/2}" y="${valueYExt}" text-anchor="middle">${d.external} j</text>`;
   });
-  const legend=`<g transform="translate(${w-170},${m.t})">
-    <rect class="wl-bar-internal" x="0" y="0" width="12" height="12" rx="3"></rect><text class="wl-axis" x="18" y="11">Interne</text>
-    <rect class="wl-bar-external" x="0" y="20" width="12" height="12" rx="3"></rect><text class="wl-axis" x="18" y="31">Externe</text>
+  const totalInt = data.reduce((s,d)=>s+d.internal,0);
+  const totalExt = data.reduce((s,d)=>s+d.external,0);
+  const totalAll = Math.max(1, totalInt + totalExt);
+  const pctInt = Math.round((totalInt/totalAll)*100);
+  const pctExt = 100 - pctInt;
+  const legend=`<g transform="translate(${w-210},${m.t})">
+    <rect class="wl-bar-internal" x="0" y="0" width="12" height="12" rx="3"></rect>
+    <text class="wl-axis" x="18" y="11">Interne ${pctInt}%</text>
+    <rect class="wl-bar-external" x="0" y="20" width="12" height="12" rx="3"></rect>
+    <text class="wl-axis" x="18" y="31">Externe ${pctExt}%</text>
   </g>`;
   const defs = `
     <defs>
+      <linearGradient id="brushed-base" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0%" stop-color="#f2f3f5"/>
+        <stop offset="45%" stop-color="#e3e6ea"/>
+        <stop offset="65%" stop-color="#f7f8fa"/>
+        <stop offset="100%" stop-color="#d9dde2"/>
+      </linearGradient>
+      <pattern id="brushed" width="6" height="6" patternUnits="userSpaceOnUse">
+        <rect width="6" height="6" fill="url(#brushed-base)"/>
+        <path d="M0 1 H6 M0 3 H6 M0 5 H6" stroke="#cfd3d9" stroke-width="0.4" opacity="0.45"/>
+      </pattern>
       <linearGradient id="grad-int" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="#0f172a" stop-opacity="0.95"/>
-        <stop offset="100%" stop-color="#1f2937" stop-opacity="0.85"/>
+        <stop offset="0%" stop-color="#22c55e" stop-opacity="0.98"/>
+        <stop offset="55%" stop-color="#16a34a" stop-opacity="0.92"/>
+        <stop offset="100%" stop-color="#15803d" stop-opacity="0.9"/>
       </linearGradient>
       <linearGradient id="grad-ext" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="#ca8a04" stop-opacity="0.95"/>
-        <stop offset="100%" stop-color="#b45309" stop-opacity="0.85"/>
+        <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.98"/>
+        <stop offset="55%" stop-color="#64748b" stop-opacity="0.92"/>
+        <stop offset="100%" stop-color="#475569" stop-opacity="0.9"/>
       </linearGradient>
+      <filter id="barShadow" x="-20%" y="-20%" width="140%" height="160%">
+        <feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#0b1424" flood-opacity="0.18"/>
+      </filter>
     </defs>
   `;
-  svg.innerHTML = `<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}"></rect>${defs}<g>${grid}</g><g>${bars}</g>${legend}`;
+  svg.innerHTML = `${defs}<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}"></rect><g>${grid}</g><g>${bars}</g>${legend}`;
+
+  if(pieSvg){
+    const pw=720, ph=360;
+    pieSvg.setAttribute("viewBox", `0 0 ${pw} ${ph}`);
+    pieSvg.style.fontFamily = fontFamily;
+    pieSvg.setAttribute("font-family", fontFamily);
+    const pieTotal = Math.max(1, totalInt + totalExt);
+    const cx = pw/2;
+    const cy = ph/2 - 8;
+    const r = 120;
+    const polar = (cx, cy, r, a)=>{
+      const rad = (a - 90) * Math.PI / 180;
+      return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+    };
+    const arcPath = (cx, cy, r, start, end)=>{
+      const s = polar(cx, cy, r, end);
+      const e = polar(cx, cy, r, start);
+      const large = end - start <= 180 ? 0 : 1;
+      return `M ${cx} ${cy} L ${s.x} ${s.y} A ${r} ${r} 0 ${large} 0 ${e.x} ${e.y} Z`;
+    };
+    let pieMarkup = `<rect class="wl-bg" x="0" y="0" width="${pw}" height="${ph}"></rect>`;
+    if(totalInt + totalExt > 0){
+      const intAngle = (totalInt / pieTotal) * 360;
+      const gap = 8;
+      const startA = 0;
+      const intMid = startA + intAngle/2;
+      const extMid = startA + intAngle + (360-intAngle)/2;
+      const intOff = polar(0,0,gap,intMid);
+      const extOff = polar(0,0,gap,extMid);
+      const intPath = arcPath(cx+intOff.x, cy+intOff.y, r, startA, startA+intAngle);
+      const extPath = arcPath(cx+extOff.x, cy+extOff.y, r, startA+intAngle, 360);
+      const intLabelPos = polar(cx+intOff.x, cy+intOff.y, r*0.62, intMid);
+      const extLabelPos = polar(cx+extOff.x, cy+extOff.y, r*0.62, extMid);
+      pieMarkup += `
+        <path d="${intPath}" fill="url(#grad-int)"></path>
+        <path d="${extPath}" fill="url(#grad-ext)"></path>
+        <text class="wl-axis" x="${intLabelPos.x}" y="${intLabelPos.y}" text-anchor="middle">${pctInt}%</text>
+        <text class="wl-axis" x="${extLabelPos.x}" y="${extLabelPos.y}" text-anchor="middle">${pctExt}%</text>
+        <text class="wl-value" x="${intLabelPos.x}" y="${intLabelPos.y + 14}" text-anchor="middle">${totalInt} j</text>
+        <text class="wl-value" x="${extLabelPos.x}" y="${extLabelPos.y + 14}" text-anchor="middle">${totalExt} j</text>
+        <text class="wl-axis" x="${cx}" y="${cy + r + 26}" text-anchor="middle">Répartition Interne / Externe</text>
+        <g transform="translate(${cx-150},${cy + r + 42})">
+          <rect class="wl-bar-internal" x="0" y="0" width="12" height="12" rx="3"></rect>
+          <text class="wl-axis" x="18" y="11">Interne ${pctInt}% • ${totalInt} j</text>
+          <rect class="wl-bar-external" x="170" y="0" width="12" height="12" rx="3"></rect>
+          <text class="wl-axis" x="188" y="11">Externe ${pctExt}% • ${totalExt} j</text>
+        </g>
+      `;
+    }
+    pieSvg.innerHTML = `${defs}${pieMarkup}`;
+  }
 }
 
 function renderFilters(){
@@ -1529,8 +1670,6 @@ function renderMaster(){
   renderKPIs(tasks);
   renderMasterMetrics(tasks);
   // Charge de travail
-  const wlSel = el("workloadGranularity");
-  if(wlSel && workloadMode) wlSel.value = workloadMode;
   renderWorkloadChart(filteredTasks());
   // Bandeau live global (toutes tâches en cours aujourd'hui)
   const masterLive = el("masterLive");
@@ -1742,8 +1881,20 @@ function bind(){
     preparePrint();
     window.print();
   });
-  el("workloadGranularity")?.addEventListener("change", ()=>{
-    workloadMode = el("workloadGranularity")?.value || "week";
+  el("workloadRangeType")?.addEventListener("change", ()=>{
+    workloadRangeType = el("workloadRangeType")?.value || "all";
+    renderWorkloadChart(filteredTasks());
+  });
+  el("workloadRangeYear")?.addEventListener("change", ()=>{
+    workloadRangeYear = el("workloadRangeYear")?.value || "";
+    renderWorkloadChart(filteredTasks());
+  });
+  el("workloadRangeStart")?.addEventListener("change", ()=>{
+    workloadRangeStart = el("workloadRangeStart")?.value || "";
+    renderWorkloadChart(filteredTasks());
+  });
+  el("workloadRangeEnd")?.addEventListener("change", ()=>{
+    workloadRangeEnd = el("workloadRangeEnd")?.value || "";
     renderWorkloadChart(filteredTasks());
   });
   el("btnExportWorkload")?.addEventListener("click", ()=>{
