@@ -202,6 +202,7 @@ const parseStatuses = (s)=> (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 const deepClone = (obj)=> JSON.parse(JSON.stringify(obj));
 const siteColor = (_site="")=>"transparent";
 const attrEscape = (s="")=> s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+let vendorsCache = [];
 const ownerType = (o="")=>{
   const k=o.toLowerCase();
   const hasInt = k.includes("interne");
@@ -223,41 +224,70 @@ const ownerBadge = (o="")=>{
 
 function refreshVendorsList(){
   const input = el("t_vendor");
-  const list = el("vendorsList");
-  if(!input || !list) return;
-  const vendors = Array.from(new Set(
+  if(!input) return;
+  vendorsCache = Array.from(new Set(
     (state?.tasks||[])
       .map(t=>(t.vendor||"").trim())
       .filter(Boolean)
   )).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
-  const current = input.value;
-  list.innerHTML = vendors.map(v=>`<option value="${attrEscape(v)}"></option>`).join("");
-  // conserver la saisie courante
-  if(current) input.value = current;
-  // mémoriser la dernière saisie pour la rajouter à la liste au prochain refresh
-  if(current && !vendors.includes(current)){
-    list.insertAdjacentHTML("afterbegin", `<option value="${attrEscape(current)}"></option>`);
-  }
+  const current = input.value.trim();
+  if(current && !vendorsCache.includes(current)) vendorsCache.unshift(current);
+  renderVendorDropdown(current);
 }
 
 function setupVendorPicker(){
   const input = el("t_vendor");
   if(!input) return;
   const openList = ()=>{
-    if(typeof input.showPicker === "function"){
-      try{ input.showPicker(); return; }catch(e){}
-    }
-    input.focus();
-    const evt = new KeyboardEvent("keydown",{key:"ArrowDown",bubbles:true});
-    input.dispatchEvent(evt);
+    renderVendorDropdown(input.value);
+    showVendorDropdown(true);
   };
   input.addEventListener("click", openList);
   input.addEventListener("keydown",(e)=>{
     if(e.key==="ArrowDown" || e.key==="F4"){
       e.preventDefault();
       openList();
+    }else if(e.key==="Escape"){
+      showVendorDropdown(false);
     }
   });
+  input.addEventListener("input", ()=>{
+    renderVendorDropdown(input.value);
+    showVendorDropdown(true);
+  });
+  document.addEventListener("click",(e)=>{
+    const box = el("vendorDropdown");
+    if(!box || !input) return;
+    if(!box.contains(e.target) && e.target!==input){
+      showVendorDropdown(false);
+    }
+  });
+}
+
+function renderVendorDropdown(filter=""){
+  const box = el("vendorDropdown");
+  const input = el("t_vendor");
+  if(!box || !input) return;
+  const q = (filter||"").toLowerCase();
+  const list = vendorsCache
+    .filter(v=>!q || v.toLowerCase().includes(q))
+    .slice(0,50);
+  if(list.length===0){
+    box.innerHTML = `<div class="vendor-empty">Aucun résultat</div>`;
+  }else{
+    box.innerHTML = list.map(v=>`<div class="vendor-item" role="option" tabindex="0">${attrEscape(v)}</div>`).join("");
+  }
+  box.querySelectorAll(".vendor-item").forEach(item=>{
+    item.onclick=()=>{ input.value=item.textContent; showVendorDropdown(false); };
+    item.onkeydown=(e)=>{ if(e.key==="Enter"){ input.value=item.textContent; showVendorDropdown(false); } };
+  });
+  showVendorDropdown(list.length>0);
+}
+
+function showVendorDropdown(show){
+  const box = el("vendorDropdown");
+  if(!box) return;
+  box.classList.toggle("open", !!show);
 }
 
 function normalizeState(raw){

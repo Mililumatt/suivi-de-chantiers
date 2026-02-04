@@ -222,8 +222,10 @@
             </select>
 
             <label class="label">Prestataire externe</label>
-            <input class="input" id="t_vendor" list="vendorsList" placeholder="Nom du prestataire (trié A→Z)" autocomplete="off" aria-label="Prestataire externe" />
-            <datalist id="vendorsList"></datalist>
+            <div class="vendor-wrap">
+              <input class="input" id="t_vendor" placeholder="Nom du prestataire (trié A→Z)" autocomplete="off" aria-label="Prestataire externe" />
+              <div id="vendorDropdown" class="vendor-dropdown" role="listbox" aria-label="Suggestions prestataire"></div>
+            </div>
 
             <div class="grid2">
               <div>

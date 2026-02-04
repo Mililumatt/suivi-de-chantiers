@@ -489,6 +489,50 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   color:#6b7280;
   font-size:11px;
 }
+
+/* Champ prestataire custom dropdown */
+.vendor-wrap{
+  position:relative;
+}
+.vendor-wrap > .input{
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: none !important;
+  position:relative;
+}
+#t_vendor::-webkit-calendar-picker-indicator{ display:none !important; }
+#t_vendor::-ms-expand{ display:none !important; }
+}
+.vendor-dropdown{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  background:#fff;
+  border:1px solid #d1d5db;
+  border-radius:6px;
+  box-shadow:0 6px 16px rgba(0,0,0,0.12);
+  max-height:220px;
+  overflow:auto;
+  z-index:50;
+  display:none;
+}
+.vendor-dropdown.open{ display:block; }
+.vendor-item{
+  padding:8px 10px;
+  cursor:pointer;
+  font-size:12px;
+}
+.vendor-item:hover,
+.vendor-item:focus{
+  background:#eef2ff;
+  outline:none;
+}
+.vendor-empty{
+  padding:8px 10px;
+  color:#6b7280;
+  font-size:12px;
+}
 .status-row .badge.owner{
   margin-left:auto;
 }
