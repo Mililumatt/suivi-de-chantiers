@@ -203,6 +203,7 @@ const deepClone = (obj)=> JSON.parse(JSON.stringify(obj));
 const siteColor = (_site="")=>"transparent";
 const attrEscape = (s="")=> s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 let vendorsCache = [];
+const VENDOR_STORE_KEY = "vendors_registry";
 const ownerType = (o="")=>{
   const k=o.toLowerCase();
   const hasInt = k.includes("interne");
@@ -225,13 +226,14 @@ const ownerBadge = (o="")=>{
 function refreshVendorsList(){
   const input = el("t_vendor");
   if(!input) return;
-  vendorsCache = Array.from(new Set(
-    (state?.tasks||[])
-      .map(t=>(t.vendor||"").trim())
-      .filter(Boolean)
-  )).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+  const registry = loadVendorsRegistry();
+  const fromTasks = (state?.tasks||[])
+    .map(t=>(t.vendor||"").trim())
+    .filter(Boolean);
+  vendorsCache = Array.from(new Set([...registry, ...fromTasks])).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
   const current = input.value.trim();
   if(current && !vendorsCache.includes(current)) vendorsCache.unshift(current);
+  saveVendorsRegistry(vendorsCache);
   renderVendorDropdown(current);
 }
 
@@ -392,6 +394,27 @@ const EMBEDDED_BACKUP = {
 
 function defaultState(){
   return deepClone(EMBEDDED_BACKUP);
+}
+
+function loadVendorsRegistry(){
+  try{
+    const raw = localStorage.getItem(VENDOR_STORE_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)) return arr.filter(Boolean);
+    return [];
+  }catch(e){
+    console.warn("Unable to load vendor registry", e);
+    return [];
+  }
+}
+
+function saveVendorsRegistry(list){
+  try{
+    localStorage.setItem(VENDOR_STORE_KEY, JSON.stringify(list));
+  }catch(e){
+    console.warn("Unable to save vendor registry", e);
+  }
 }
 
 function load(){
