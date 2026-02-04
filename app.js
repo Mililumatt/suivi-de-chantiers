@@ -924,21 +924,37 @@ function exportSvgToPdf(svgId, title="Export"){
   const url = URL.createObjectURL(blob);
   const img = new Image();
   const { width, height } = svg.getBoundingClientRect();
+  const fallbackWidth = svg.viewBox?.baseVal?.width || svg.clientWidth || 900;
+  const fallbackHeight = svg.viewBox?.baseVal?.height || svg.clientHeight || 260;
   img.onload = function(){
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.floor(width));
-    canvas.height = Math.max(1, Math.floor(height));
+    canvas.width = Math.max(1, Math.floor(width || fallbackWidth));
+    canvas.height = Math.max(1, Math.floor(height || fallbackHeight));
     const ctx = canvas.getContext("2d");
     ctx.fillStyle="#fff";
     ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(img,0,0,canvas.width,canvas.height);
     const data = canvas.toDataURL("image/png");
-    const w = window.open("");
+    const w = window.open("","_blank");
     if(!w) return;
-    w.document.write(`<title>${title}</title><style>body{margin:0;padding:20px;text-align:center;font-family:sans-serif;} img{max-width:100%;} h1{font-size:16px;margin-bottom:12px;}</style><h1>${title}</h1><img src="${data}">`);
+    w.document.write(`<title>${title}</title><style>body{margin:0;padding:20px;text-align:center;font-family:sans-serif;} img{max-width:100%;} h1{font-size:16px;margin-bottom:12px;}</style><h1>${title}</h1><img id="__print_img" src="${data}">`);
     w.document.close();
-    w.focus();
-    w.print();
+    const targetImg = w.document.getElementById("__print_img");
+    const launchPrint = ()=>{
+      w.focus();
+      w.print();
+    };
+    if(targetImg){
+      if(targetImg.complete){
+        launchPrint();
+      }else{
+        targetImg.addEventListener("load", ()=>launchPrint(), { once:true });
+        // filet de sécurité si l'événement load ne se déclenche pas
+        setTimeout(()=>launchPrint(),300);
+      }
+    }else{
+      launchPrint();
+    }
   };
   img.src = url;
 }
