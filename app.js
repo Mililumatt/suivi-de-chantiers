@@ -918,8 +918,25 @@ function renderMasterGantt(){
 function exportSvgToPdf(svgId, title="Export"){
   const svg = document.getElementById(svgId);
   if(!svg) return;
+
+  // Cloner et injecter le style indispensable pour l'export (sinon le SVG perd ses classes).
+  const clone = svg.cloneNode(true);
+  const inlineStyle = `
+    .wl-axis text{font-size:11px;fill:#0f172a;}
+    .wl-bg{fill:#ffffff;}
+    .wl-bar-internal{fill:#1e3a8a;}
+    .wl-bar-external{fill:#f59e0b;}
+    .wl-bar-mixte{fill:#7c3aed;}
+    .wl-grid{stroke:#e5e7eb;stroke-width:1;}
+    .wl-grid-vert{stroke:#e5e7eb;stroke-width:1;stroke-dasharray:2 3;}
+    .wl-value{font-size:10px;fill:#0f172a;}
+  `;
+  const styleEl = document.createElement("style");
+  styleEl.textContent = inlineStyle;
+  clone.insertBefore(styleEl, clone.firstChild);
+
   const serializer = new XMLSerializer();
-  const str = serializer.serializeToString(svg);
+  const str = serializer.serializeToString(clone);
   const blob = new Blob([str], {type:"image/svg+xml;charset=utf-8"});
   const url = URL.createObjectURL(blob);
   const img = new Image();
@@ -937,7 +954,19 @@ function exportSvgToPdf(svgId, title="Export"){
     const data = canvas.toDataURL("image/png");
     const w = window.open("","_blank");
     if(!w) return;
-    w.document.write(`<title>${title}</title><style>body{margin:0;padding:20px;text-align:center;font-family:sans-serif;} img{max-width:100%;} h1{font-size:16px;margin-bottom:12px;}</style><h1>${title}</h1><img id="__print_img" src="${data}">`);
+    // Mise en page A4 paysage + centrage
+    w.document.write(`
+      <title>${title}</title>
+      <style>
+        @page { size: A4 landscape; margin: 10mm; }
+        body{margin:0;padding:0;display:flex;flex-direction:column;align-items:center;font-family:sans-serif;background:#fff;}
+        h1{font-size:16px;margin:12px 0;text-align:center;}
+        .img-wrap{width:100%;display:flex;justify-content:center;padding:10mm 12mm 12mm;}
+        img{max-width:100%;height:auto;}
+      </style>
+      <h1>${title}</h1>
+      <div class="img-wrap"><img id="__print_img" src="${data}" aria-label="${title}"></div>
+    `);
     w.document.close();
     const targetImg = w.document.getElementById("__print_img");
     const launchPrint = ()=>{
@@ -949,7 +978,6 @@ function exportSvgToPdf(svgId, title="Export"){
         launchPrint();
       }else{
         targetImg.addEventListener("load", ()=>launchPrint(), { once:true });
-        // filet de sécurité si l'événement load ne se déclenche pas
         setTimeout(()=>launchPrint(),300);
       }
     }else{
