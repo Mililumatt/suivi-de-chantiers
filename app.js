@@ -243,6 +243,7 @@ function setupVendorPicker(){
     showVendorDropdown(true);
   };
   input.addEventListener("click", openList);
+  input.addEventListener("focus", openList);
   input.addEventListener("keydown",(e)=>{
     if(e.key==="ArrowDown" || e.key==="F4"){
       e.preventDefault();
@@ -262,6 +263,10 @@ function setupVendorPicker(){
       showVendorDropdown(false);
     }
   });
+  const box = el("vendorDropdown");
+  if(box){
+    box.addEventListener("mousedown",(e)=>e.preventDefault()); // empêcher blur avant le click
+  }
 }
 
 function renderVendorDropdown(filter=""){

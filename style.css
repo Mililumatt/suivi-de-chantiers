@@ -499,6 +499,11 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   appearance: none;
   background-image: none !important;
   position:relative;
+  padding-right:28px;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position: right 10px center;
+  cursor:pointer;
 }
 #t_vendor::-webkit-calendar-picker-indicator{ display:none !important; }
 #t_vendor::-ms-expand{ display:none !important; }
@@ -514,7 +519,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   box-shadow:0 6px 16px rgba(0,0,0,0.12);
   max-height:220px;
   overflow:auto;
-  z-index:50;
+  z-index:4000;
   display:none;
 }
 .vendor-dropdown.open{ display:block; }
