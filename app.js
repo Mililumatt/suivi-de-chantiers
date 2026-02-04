@@ -205,15 +205,16 @@ const ownerType = (o="")=>{
   const k=o.toLowerCase();
   const hasInt = k.includes("interne");
   const hasExt = k.includes("externe");
-  if(hasInt && hasExt) return "mixte";
+  // Plus de catégorie "mixte" : on priorise "interne" si exclusif, sinon "externe".
+  if(hasInt && !hasExt) return "interne";
   if(hasExt) return "externe";
-  if(hasInt) return "interne";
   return "inconnu";
 };
 const ownerBadge = (o="")=>{
   const k = o.toLowerCase();
+  // Palette alignée avec le graphique de charge
   let color = "#0f172a"; // interne par défaut
-  if(k.includes("interne") && k.includes("externe")) color = "#6b21a8"; // mixte
+  if(k.includes("interne") && k.includes("externe")) color = "#b45309"; // mix -> externe
   else if(k.includes("externe")) color = "#b45309"; // prestataire externe
   else if(k.includes("interne")) color = "#0f172a"; // équipe interne
   return `<span class="badge owner" style="background:${color};border-color:${color};color:#fff;">${o}</span>`;
@@ -580,7 +581,7 @@ function keyToLabel(key, mode){
 }
 
 function computeWorkloadData(tasks, mode="week"){
-  const map = new Map(); // key -> {internal, external, mixte, total, anchor}
+  const map = new Map(); // key -> {internal, external, total, anchor}
   tasks.filter(t=>t.start && t.end).forEach(t=>{
     const start=new Date(t.start+"T00:00:00");
     const end=new Date(t.end+"T00:00:00");
@@ -589,13 +590,11 @@ function computeWorkloadData(tasks, mode="week"){
     for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
       const key = mode==="day" ? d.toISOString().slice(0,10) : weekKey(d);
       const anchor = mode==="day" ? d.getTime() : startOfWeek(d).getTime();
-      if(!map.has(key)) map.set(key,{internal:0,external:0,mixte:0,total:0,anchor});
+      if(!map.has(key)) map.set(key,{internal:0,external:0,total:0,anchor});
       const slot = map.get(key);
       if(typ==="interne") slot.internal+=1;
-      else if(typ==="externe") slot.external+=1;
-      else if(typ==="mixte") slot.mixte+=1;
-      else slot.external+=1; // défaut: compter comme externe
-      slot.total = slot.internal + slot.external + slot.mixte;
+      else slot.external+=1; // "externe" + inconnus
+      slot.total = slot.internal + slot.external;
     }
   });
   const arr = Array.from(map.entries()).map(([key,val])=>({...val,key}));
@@ -922,11 +921,11 @@ function exportSvgToPdf(svgId, title="Export"){
   // Cloner et injecter le style indispensable pour l'export (sinon le SVG perd ses classes).
   const clone = svg.cloneNode(true);
   const inlineStyle = `
+    * { font-family: "Century Gothic", "Segoe UI", sans-serif; }
     .wl-axis text{font-size:11px;fill:#0f172a;}
     .wl-bg{fill:#ffffff;}
-    .wl-bar-internal{fill:#1e3a8a;}
-    .wl-bar-external{fill:#f59e0b;}
-    .wl-bar-mixte{fill:#7c3aed;}
+    .wl-bar-internal{fill:#0f172a;}
+    .wl-bar-external{fill:#b45309;}
     .wl-grid{stroke:#e5e7eb;stroke-width:1;}
     .wl-grid-vert{stroke:#e5e7eb;stroke-width:1;stroke-dasharray:2 3;}
     .wl-value{font-size:10px;fill:#0f172a;}
@@ -959,12 +958,12 @@ function exportSvgToPdf(svgId, title="Export"){
       <title>${title}</title>
       <style>
         @page { size: A4 landscape; margin: 10mm; }
-        body{margin:0;padding:0;display:flex;flex-direction:column;align-items:center;font-family:sans-serif;background:#fff;}
+        body{margin:0;padding:0;display:flex;flex-direction:column;align-items:center;font-family:"Century Gothic","Segoe UI",sans-serif;background:#fff;}
         h1{font-size:16px;margin:12px 0;text-align:center;}
         .img-wrap{width:100%;display:flex;justify-content:center;padding:10mm 12mm 12mm;}
         img{max-width:100%;height:auto;}
       </style>
-      <h1>${title}</h1>
+      <h1>${title} (jours)</h1>
       <div class="img-wrap"><img id="__print_img" src="${data}" aria-label="${title}"></div>
     `);
     w.document.close();
@@ -994,8 +993,11 @@ function renderWorkloadChart(tasks){
   const data = computeWorkloadData(tasks, mode);
   const svg = el("workloadChart");
   if(!svg) return;
-  const w=900, h=260, m={l:50,r:24,t:26,b:50};
+  const w=900, h=260, m={l:60,r:24,t:30,b:54};
+  const fontFamily = `"Century Gothic","Segoe UI",sans-serif`;
   svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
+  svg.style.fontFamily = fontFamily;
+  svg.setAttribute("font-family", fontFamily);
   svg.innerHTML="";
   if(data.length===0){
     svg.innerHTML = `<text x="${w/2}" y="${h/2}" text-anchor="middle" fill="#6b7280" font-size="12">Aucune tâche datée</text>`;
@@ -1013,7 +1015,7 @@ function renderWorkloadChart(tasks){
     const y = m.t + chartH - (i/ticks)*chartH;
     const val = Math.round((i/ticks)*maxVal);
     grid+=`<line class="wl-grid" x1="${m.l}" y1="${y}" x2="${w-m.r}" y2="${y}"></line>`;
-    grid+=`<text class="wl-axis" x="${m.l-8}" y="${y+4}" text-anchor="end">${val}</text>`;
+    grid+=`<text class="wl-axis" x="${m.l-10}" y="${y+4}" text-anchor="end">${val} j</text>`;
   }
   // vertical guides
   data.forEach((d,idx)=>{
@@ -1027,37 +1029,29 @@ function renderWorkloadChart(tasks){
     let y = m.t + chartH;
     const hInt = (d.internal/maxVal)*chartH;
     const hExt = (d.external/maxVal)*chartH;
-    const hMix = (d.mixte/maxVal)*chartH;
     y -= hInt;
     bars+=`<rect class="wl-bar-internal" fill="url(#grad-int)" x="${x}" y="${y}" width="${barW}" height="${hInt}" rx="4" ry="4"></rect>`;
-    y -= hMix;
-    bars+=`<rect class="wl-bar-mixte" fill="url(#grad-mix)" x="${x}" y="${y}" width="${barW}" height="${hMix}" rx="4" ry="4"></rect>`;
     y -= hExt;
     bars+=`<rect class="wl-bar-external" fill="url(#grad-ext)" x="${x}" y="${y}" width="${barW}" height="${hExt}" rx="4" ry="4"></rect>`;
     const lbl = keyToLabel(d.key, mode);
     const lx = x + barW/2;
     const ly = h - m.b + 14;
     bars+=`<text class="wl-axis" x="${lx}" y="${ly}" text-anchor="middle">${lbl}</text>`;
-    bars+=`<text class="wl-value" x="${lx}" y="${m.t + chartH - (d.total/maxVal)*chartH - 6}" text-anchor="middle">${d.total}</text>`;
+    bars+=`<text class="wl-value" x="${lx}" y="${m.t + chartH - (d.total/maxVal)*chartH - 6}" text-anchor="middle">${d.total} j</text>`;
   });
-  const legend=`<g transform="translate(${w-190},${m.t})">
+  const legend=`<g transform="translate(${w-170},${m.t})">
     <rect class="wl-bar-internal" x="0" y="0" width="12" height="12" rx="3"></rect><text class="wl-axis" x="18" y="11">Interne</text>
     <rect class="wl-bar-external" x="0" y="20" width="12" height="12" rx="3"></rect><text class="wl-axis" x="18" y="31">Externe</text>
-    <rect class="wl-bar-mixte" x="0" y="40" width="12" height="12" rx="3"></rect><text class="wl-axis" x="18" y="51">Mixte</text>
   </g>`;
   const defs = `
     <defs>
       <linearGradient id="grad-int" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="#243c83" stop-opacity="0.92"/>
-        <stop offset="100%" stop-color="#1e3a8a" stop-opacity="0.8"/>
+        <stop offset="0%" stop-color="#0f172a" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="#1f2937" stop-opacity="0.85"/>
       </linearGradient>
       <linearGradient id="grad-ext" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="#f8b14b" stop-opacity="0.95"/>
-        <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.82"/>
-      </linearGradient>
-      <linearGradient id="grad-mix" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.95"/>
-        <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.82"/>
+        <stop offset="0%" stop-color="#ca8a04" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="#b45309" stop-opacity="0.85"/>
       </linearGradient>
     </defs>
   `;
