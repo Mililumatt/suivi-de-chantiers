@@ -457,6 +457,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   display:flex;
   flex-direction:column;
   gap:2px;
+  justify-content:center;
 }
 .status-row{
   display:flex;
@@ -464,6 +465,29 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   justify-content:space-between;
   gap:8px;
   min-height:18px; /* aligne la hauteur avec les lignes de barres gantt */
+}
+.gantt-vendor-cell{
+  vertical-align:middle;
+  width:140px;
+  padding:4px 6px;
+}
+.gantt-vendor-cell .vendor-stack{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  justify-content:center;
+}
+.gantt-vendor-cell .badge.owner{
+  display:inline-flex;
+  align-items:center;
+  height:22px;
+  padding:0 8px;
+  line-height:1;
+  margin:0;
+}
+.gantt-vendor-cell .text-muted{
+  color:#6b7280;
+  font-size:11px;
 }
 .status-row .badge.owner{
   margin-left:auto;

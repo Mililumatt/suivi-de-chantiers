@@ -232,6 +232,18 @@ function refreshVendorsList(){
   list.innerHTML = vendors.map(v=>`<option value="${v}"></option>`).join("");
 }
 
+function setupVendorPicker(){
+  const input = el("t_vendor");
+  if(!input) return;
+  const openList = ()=>{
+    if(typeof input.showPicker === "function"){
+      try{ input.showPicker(); }catch(e){}
+    }
+  };
+  input.addEventListener("focus", openList);
+  input.addEventListener("click", ()=>{ if(!input.value) openList(); });
+}
+
 function normalizeState(raw){
   if(!raw) return defaultState();
   const normalizeStatus = (s)=> (s||"").split(",").filter(Boolean).map(v=>{
@@ -718,7 +730,7 @@ function renderGantt(projectId){
 
     html+=`<tr data-lane="${lane.title}">`;
     html+=`<td><b><span class="num-badge" style="--badge-color:${c};--badge-text:#fff;">${taskOrderMap[firstTask.id]||""}</span> <span class="icon-picto">📌</span> ${lane.title}</b><div class="gantt-meta">${ownerBadgeHtml}</div></td>`;
-    html+=`<td class="gantt-vendor-cell">${vendorHtml}</td>`;
+    html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorHtml}</div></td>`;
     html+=`<td class="gantt-status-cell"><div class="gantt-status-stack">${statusText}</div></td>`;
 
     weeks.forEach(w=>{
@@ -894,7 +906,7 @@ function renderMasterGantt(){
 
     html+=`<tr data-lane="${lane.title}">`;
     html+=`<td><b><span class="num-badge" style="--badge-color:${c};--badge-text:#fff;">${taskOrderMap[firstTask.id]||""}</span> <span class="icon-picto">📌</span> ${lane.title}</b><div class="gantt-meta">${ownerBadgeHtml}</div></td>`;
-    html+=`<td class="gantt-vendor-cell">${vendorHtml}</td>`;
+    html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorHtml}</div></td>`;
     html+=`<td class="gantt-status-cell"><div class="gantt-status-stack">${statusText}</div></td>`;
 
     weeks.forEach(w=>{
@@ -1599,6 +1611,7 @@ function bind(){
     const n=el(id); 
     if(n) n.addEventListener("input", ()=>{ renderMaster(); saveUIState(); markDirty(); });
   });
+  setupVendorPicker();
   // Affichage date du jour + copyright
   const brandSub = el("brandSub");
   if(brandSub){
