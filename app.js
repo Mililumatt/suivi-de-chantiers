@@ -992,7 +992,7 @@ function renderGantt(projectId){
   });
 
   let html="<div class='tablewrap gantt-table'><table class='table'>";
-  html+="<thead><tr><th class='gantt-task-col'>Tâche</th><th style='width:120px'>Prestataire</th><th style='width:70px'>Statut</th>";
+  html+="<thead><tr><th class='gantt-task-col-project'>Tâche</th><th style='width:120px'>Prestataire</th><th style='width:70px'>Statut</th>";
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
@@ -1018,7 +1018,8 @@ function renderGantt(projectId){
     })();
 
     html+=`<tr data-task="${t.id}">`;
-    html+=`<td><b><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span></b></td>`;
+    const taskDesc = (t.roomNumber || "").trim();
+    html+=`<td class="gantt-task-col-project"><b><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span></b> <span class="gantt-task-name">${attrEscape(taskDesc)}</span></td>`;
     html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorBadges}</div></td>`;
     html+=`<td class="gantt-status-cell"><div class="gantt-status-stack"><div class="status-row"><span>${statusLabels(mainStatus)}</span></div></div></td>`;
 

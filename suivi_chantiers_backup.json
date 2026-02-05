@@ -4,14 +4,14 @@
       "id": "3e86100919c04fb8456",
       "name": "Bureau Pastorale",
       "site": "CDM",
-      "subproject": "",
+      "subproject": "Rénovation",
       "constraints": ""
     },
     {
       "id": "0c644af019c05700845",
       "name": "Internat St Gervais",
       "site": "LGT",
-      "subproject": "",
+      "subproject": "Rénovation",
       "constraints": ""
     },
     {
@@ -25,7 +25,7 @@
       "id": "fd47202319c27a87d06",
       "name": "Serrures Turboself",
       "site": "LGT",
-      "subproject": "",
+      "subproject": "Pose des 13 Serrures",
       "constraints": ""
     },
     {
@@ -45,7 +45,8 @@
       "start": "2026-02-09",
       "status": "PREPARATION",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Rénovation"
+      "roomNumber": "Vidage & Protection",
+      "vendor": ""
     },
     {
       "id": "f490f0e019c0571bee2",
@@ -55,7 +56,8 @@
       "start": "2026-01-26",
       "status": "ETUDE",
       "projectId": "0c644af019c05700845",
-      "roomNumber": "Rénovation CH 011"
+      "roomNumber": "CH011 Étude & Appros",
+      "vendor": ""
     },
     {
       "id": "057fbc5519c1df27433",
@@ -65,16 +67,17 @@
       "status": "HUIS_SER",
       "vendor": "MARION",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Rénovation"
+      "roomNumber": "Pose pans fixes"
     },
     {
       "id": "b0fc5a2f19c1e8067ab",
-      "end": "2026-03-06",
+      "end": "2026-02-27",
       "owner": "Équipe interne",
       "start": "2026-02-23",
       "status": "PEINTURE",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Rénovation"
+      "roomNumber": "Enduits & Peinture",
+      "vendor": ""
     },
     {
       "id": "aa4f131519c1e82440b",
@@ -83,16 +86,18 @@
       "start": "2026-02-11",
       "status": "ELECTRICITE",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Rénovation"
+      "roomNumber": "Dépose & repose CF/Cf",
+      "vendor": ""
     },
     {
       "id": "8ac26e8a19c221422b0",
-      "end": "2026-02-19",
+      "end": "2026-02-10",
       "owner": "Équipe interne",
       "start": "2026-02-09",
-      "status": "PEINTURE",
+      "status": "PREPARATION",
+      "vendor": "",
       "projectId": "0c644af019c05700845",
-      "roomNumber": "Rénovation CH 011"
+      "roomNumber": "CH011 Vidage & Protection"
     },
     {
       "id": "32dc025b19c2215340b",
@@ -101,7 +106,8 @@
       "start": "2026-02-23",
       "status": "AMENAGEMENTS",
       "projectId": "0c644af019c05700845",
-      "roomNumber": "Rénovation CH 011"
+      "roomNumber": "CH011 Réinstallation & Livraison",
+      "vendor": ""
     },
     {
       "id": "647eda1319c230944d8",
@@ -111,7 +117,7 @@
       "status": "HUIS_SER",
       "vendor": "MARION",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Rénovation"
+      "roomNumber": "Finition pans fixes"
     },
     {
       "id": "92d410e719c23d422cc",
@@ -130,16 +136,8 @@
       "start": "2026-02-02",
       "status": "ETUDE",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Rénovation"
-    },
-    {
-      "id": "e154d70e19c241cecdb",
-      "end": "2026-03-11",
-      "owner": "Équipe interne",
-      "start": "2026-03-09",
-      "status": "PEINTURE",
-      "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Rénovation"
+      "roomNumber": "Étude & Appros",
+      "vendor": ""
     },
     {
       "id": "3068784419c27a966e0",
@@ -149,16 +147,17 @@
       "status": "HUIS_SER",
       "vendor": "Turboself",
       "projectId": "fd47202319c27a87d06",
-      "roomNumber": "Pose des 13 Serrures"
+      "roomNumber": "Pose des 1 Serrure"
     },
     {
       "id": "218f59dc19c27a9b7be",
-      "end": "2026-02-20",
+      "end": "2026-02-13",
       "owner": "Équipe interne",
-      "start": "2026-02-10",
+      "start": "2026-02-09",
       "status": "HUIS_SER",
+      "vendor": "",
       "projectId": "fd47202319c27a87d06",
-      "roomNumber": "Pose des 13 Serrures"
+      "roomNumber": "Pose 13 sérrures"
     },
     {
       "id": "9380be4319c27b0af51",
@@ -179,6 +178,16 @@
       "vendor": "JOUSSET",
       "projectId": "c152982019c284c5446",
       "roomNumber": "Aménagements Pro"
+    },
+    {
+      "id": "dca6e6a819c2c8f0a29",
+      "end": "2026-02-19",
+      "owner": "Équipe interne",
+      "start": "2026-02-11",
+      "status": "PEINTURE",
+      "vendor": "",
+      "projectId": "0c644af019c05700845",
+      "roomNumber": "CH011 Enduits & Peinture"
     }
   ],
   "ui": {

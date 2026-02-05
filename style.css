@@ -508,14 +508,13 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
   color:#6b7280;
   font-size:11px;
 }
-.gantt-task-col{
-  width:44px;
-  min-width:44px;
-  max-width:44px;
-  text-align:center;
+.gantt-task-col-project{
+  width:200px;
+  min-width:200px;
+  text-align:left;
 }
-.gantt-task-col + td .gantt-task-name{
-  display:none;
+.gantt-task-col-project .num-badge{
+  margin-right:6px;
 }
 .vendor-manage-btn{
   position:absolute;
