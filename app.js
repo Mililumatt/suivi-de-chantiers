@@ -164,6 +164,12 @@ let workloadRangeTypeProject = "all";
 let workloadRangeStartProject = "";
 let workloadRangeEndProject = "";
 let workloadRangeYearProject = "";
+let ganttColVisibility = {
+  masterVendor: true,
+  masterStatus: true,
+  projectVendor: true,
+  projectStatus: true
+};
 
 const STATUSES = [
   {v:"CHANTIER_COMPLET", label:"Chantier complet"},
@@ -209,6 +215,55 @@ const parseStatuses = (s)=> (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 const deepClone = (obj)=> JSON.parse(JSON.stringify(obj));
 const siteColor = (_site="")=>"transparent";
 const attrEscape = (s="")=> s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function updateTopbarHeight(){
+  const tb = document.querySelector(".topbar");
+  if(!tb) return;
+  document.documentElement.style.setProperty("--topbar-h", `${tb.offsetHeight}px`);
+}
+function updateSidebarTop(){
+  const main = document.querySelector(".main");
+  if(!main) return;
+  const anchor = main.querySelector(".panel, .card, section, div");
+  const rect = (anchor || main).getBoundingClientRect();
+  const top = Math.max(0, Math.round(rect.top));
+  document.documentElement.style.setProperty("--sidebar-top", `${top}px`);
+  if(window.scrollY === 0){
+    window.__sidebarTopLocked = top;
+  }
+}
+function applySidebarTopLock(){
+  if(typeof window.__sidebarTopLocked !== "number") return;
+  document.documentElement.style.setProperty("--sidebar-top", `${window.__sidebarTopLocked}px`);
+}
+function setToggleBtnState(id, isOn){
+  const b = el(id);
+  if(!b) return;
+  b.classList.toggle("btn-primary", !!isOn);
+  b.classList.toggle("btn-ghost", !isOn);
+}
+function applyGanttColumnVisibility(){
+  const masterTable = document.querySelector("#masterGantt table");
+  if(masterTable){
+    masterTable.classList.toggle("hide-vendor", !ganttColVisibility.masterVendor);
+    masterTable.classList.toggle("hide-status", !ganttColVisibility.masterStatus);
+  }
+  const projectTable = document.querySelector("#gantt table");
+  if(projectTable){
+    projectTable.classList.toggle("hide-vendor", !ganttColVisibility.projectVendor);
+    projectTable.classList.toggle("hide-status", !ganttColVisibility.projectStatus);
+  }
+  setToggleBtnState("btnToggleMasterVendor", ganttColVisibility.masterVendor);
+  setToggleBtnState("btnToggleMasterStatus", ganttColVisibility.masterStatus);
+  setToggleBtnState("btnToggleProjectVendor", ganttColVisibility.projectVendor);
+  setToggleBtnState("btnToggleProjectStatus", ganttColVisibility.projectStatus);
+}
+function openTaskFromGantt(taskId){
+  const task = state.tasks.find(x=>x.id===taskId);
+  if(!task) return;
+  selectedProjectId = task.projectId;
+  selectedTaskId = taskId;
+  renderProject();
+}
 const FLOAT_Z = 1000000;
 const floatingMap = new Map();
 function positionFloating(el, anchor){
@@ -1288,8 +1343,8 @@ function renderGantt(projectId){
     return taskTitle(a).localeCompare(taskTitle(b));
   });
 
-  let html="<div class='tablewrap gantt-table'><table class='table'>";
-  html+="<thead><tr><th class='gantt-task-col-project'>Tâche</th><th style='width:120px'>Prestataire</th><th style='width:70px'>Statut</th>";
+  let html="<div class='tablewrap gantt-table'><table class='table' style='--gcol1:200px;--gcol2:120px;--gcol3:70px'>";
+  html+="<thead><tr><th class='gantt-task-col-project gantt-col-task'>Tâche</th><th class='gantt-col-vendor' style='width:120px'>Prestataire</th><th class='gantt-col-status' style='width:70px'>Statut</th>";
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
@@ -1314,14 +1369,14 @@ function renderGantt(projectId){
         .map(v=>vendorBadge(v)).join(" ");
     })();
 
-    html+=`<tr data-task="${t.id}">`;
+    html+=`<tr data-task="${t.id}" onclick="openTaskFromGantt('${t.id}')">`;
     const p = state?.projects?.find(x=>x.id===t.projectId);
     const sub = (p?.subproject || "").trim();
     const taskDesc = (t.roomNumber || "").trim();
     const label = [sub, taskDesc].filter(Boolean).join(" — ");
-    html+=`<td class="gantt-task-col-project"><b><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span></b> <span class="gantt-task-name">${attrEscape(label)}</span></td>`;
-    html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorBadges}</div></td>`;
-    html+=`<td class="gantt-status-cell"><div class="gantt-status-stack"><div class="status-row"><span>${statusLabels(mainStatus)}</span></div></div></td>`;
+    html+=`<td class="gantt-task-col-project gantt-col-task"><b><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span></b> <span class="gantt-task-name">${attrEscape(label)}</span></td>`;
+    html+=`<td class="gantt-vendor-cell gantt-col-vendor"><div class="vendor-stack">${vendorBadges}</div></td>`;
+    html+=`<td class="gantt-status-cell gantt-col-status"><div class="gantt-status-stack"><div class="status-row"><span>${statusLabels(mainStatus)}</span></div></div></td>`;
 
     weeks.forEach(w=>{
       const sDate=new Date(t.start+"T00:00:00");
@@ -1340,9 +1395,23 @@ function renderGantt(projectId){
 
   html+="</tbody></table></div>";
   wrap.innerHTML=html;
+  applyGanttColumnVisibility();
   wrap.querySelectorAll(".bar-click")?.forEach(bar=>{
     bar.onclick=()=>{
       const taskId = bar.dataset.task;
+      const task = state.tasks.find(x=>x.id===taskId);
+      if(!task) return;
+      selectedProjectId = task.projectId;
+      selectedTaskId = taskId;
+      renderProject();
+    };
+  });
+  wrap.querySelectorAll("tbody tr[data-task] td")?.forEach(td=>{
+    td.onclick=(e)=>{
+      if(e.target && e.target.closest(".bar-click")) return;
+      const row = e.currentTarget?.parentElement;
+      if(!row || !row.dataset.task) return;
+      const taskId = row.dataset.task;
       const task = state.tasks.find(x=>x.id===taskId);
       if(!task) return;
       selectedProjectId = task.projectId;
@@ -1413,8 +1482,8 @@ function renderMasterGantt(){
     return taskTitle(a).localeCompare(taskTitle(b));
   });
 
-  let html="<div class='tablewrap gantt-table'><table class='table'>";
-  html+="<thead><tr><th style='width:150px'>Tâche</th><th style='width:140px'>Prestataire</th><th style='width:90px'>Statut</th>";
+  let html="<div class='tablewrap gantt-table'><table class='table' style='--gcol1:150px;--gcol2:140px;--gcol3:90px'>";
+  html+="<thead><tr><th class='gantt-col-task' style='width:150px'>Tâche</th><th class='gantt-col-vendor' style='width:140px'>Prestataire</th><th class='gantt-col-status' style='width:90px'>Statut</th>";
   weeks.forEach(w=>{
     const info=isoWeekInfo(w);
     const wEnd=endOfWorkWeek(w);
@@ -1439,10 +1508,10 @@ function renderMasterGantt(){
         .map(v=>vendorBadge(v)).join(" ");
     })();
 
-    html+=`<tr data-task="${t.id}">`;
-    html+=`<td><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span> <span class="gantt-task-name">${attrEscape(projectName)}</span></td>`;
-    html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorBadges}</div></td>`;
-    html+=`<td class="gantt-status-cell"><div class="gantt-status-stack"><div class="status-row"><span>${statusLabels(mainStatus)}</span></div></div></td>`;
+    html+=`<tr data-task="${t.id}" onclick="openTaskFromGantt('${t.id}')">`;
+    html+=`<td class="gantt-col-task"><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span> <span class="gantt-task-name">${attrEscape(projectName)}</span></td>`;
+    html+=`<td class="gantt-vendor-cell gantt-col-vendor"><div class="vendor-stack">${vendorBadges}</div></td>`;
+    html+=`<td class="gantt-status-cell gantt-col-status"><div class="gantt-status-stack"><div class="status-row"><span>${statusLabels(mainStatus)}</span></div></div></td>`;
 
     weeks.forEach(w=>{
       const sDate=new Date(t.start+"T00:00:00");
@@ -1461,14 +1530,14 @@ function renderMasterGantt(){
 
   html+="</tbody></table></div>";
   wrap.innerHTML=html;
+  applyGanttColumnVisibility();
   wrap.querySelectorAll(".bar-click")?.forEach(bar=>{
-    bar.onclick=()=>{
+    bar.onclick=(e)=>{
+      if(e && e.stopPropagation) e.stopPropagation();
       const taskId = bar.dataset.task;
       const task = state.tasks.find(x=>x.id===taskId);
       if(!task) return;
-      selectedProjectId = task.projectId;
-      selectedTaskId = taskId;
-      renderProject();
+      openTaskFromGantt(taskId);
     };
   });
 }
@@ -1707,6 +1776,14 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
     <rect x="0" y="20" width="12" height="12" rx="3" fill="url(#${gradExtId})"></rect>
     <text class="wl-axis" x="18" y="31">Externe ${pctExt}%</text>
   </g>`;
+  const legendOverlay = `
+    <g transform="translate(${w-310},12)">
+      <rect x="-6" y="-6" width="270" height="26" rx="8" ry="8" fill="rgba(255,255,255,0.92)" stroke="#e5e7eb"/>
+      <rect x="0" y="0" width="12" height="12" rx="3" fill="url(#${gradIntId})"></rect>
+      <text class="wl-axis" x="18" y="11">Interne ${pctInt}%</text>
+      <rect x="120" y="0" width="12" height="12" rx="3" fill="url(#${gradExtId})"></rect>
+      <text class="wl-axis" x="138" y="11">Externe ${pctExt}%</text>
+    </g>`;
   const defs = `
     <defs>
       <linearGradient id="${brushedBaseId}" x1="0" x2="1" y1="0" y2="0">
@@ -1734,7 +1811,7 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
       </filter>
     </defs>
   `;
-  svg.innerHTML = `${defs}<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}" fill="url(#${brushedId})"></rect><g>${grid}</g><g>${bars}</g>${legend}`;
+  svg.innerHTML = `${defs}<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}" fill="url(#${brushedId})"></rect><g>${grid}</g><g>${bars}</g>${legendOverlay}`;
 
   if(pieSvg){
     const pw=720, ph=360;
@@ -2205,6 +2282,8 @@ function renderAll(){
   renderTabs();
   if(selectedProjectId) renderProject();
   else renderMaster();
+  updateSidebarTop();
+  applySidebarTopLock();
 }
 
 function bind(){
@@ -2216,6 +2295,14 @@ function bind(){
     if(wrap && !wrap.contains(e.target)){ toggleStatusMenu(false); }
   });
 
+  updateTopbarHeight();
+  updateSidebarTop();
+  applySidebarTopLock();
+  window.addEventListener("resize", ()=>{
+    updateTopbarHeight();
+    updateSidebarTop();
+    applySidebarTopLock();
+  });
   el("btnSave")?.addEventListener("click", ()=>{
     if(isLocked) return;
     saveState();
@@ -2277,6 +2364,22 @@ function bind(){
     if(!selectedProjectId) return;
     const projectTasks = state.tasks.filter(t=>t.projectId===selectedProjectId);
     exportSvgToPdf("workloadChartProject","Charge de travail (projet)", "workloadPieProject", projectTasks);
+  });
+  el("btnToggleMasterVendor")?.addEventListener("click", ()=>{
+    ganttColVisibility.masterVendor = !ganttColVisibility.masterVendor;
+    applyGanttColumnVisibility();
+  });
+  el("btnToggleMasterStatus")?.addEventListener("click", ()=>{
+    ganttColVisibility.masterStatus = !ganttColVisibility.masterStatus;
+    applyGanttColumnVisibility();
+  });
+  el("btnToggleProjectVendor")?.addEventListener("click", ()=>{
+    ganttColVisibility.projectVendor = !ganttColVisibility.projectVendor;
+    applyGanttColumnVisibility();
+  });
+  el("btnToggleProjectStatus")?.addEventListener("click", ()=>{
+    ganttColVisibility.projectStatus = !ganttColVisibility.projectStatus;
+    applyGanttColumnVisibility();
   });
   const modal = el("exportProjectModal");
   const btnNo = el("btnExportNoCharts");
@@ -2677,5 +2780,7 @@ if(typeof window !== "undefined"){
     if(modal){ modal.classList.remove("hidden"); modal.style.display="flex"; modal.setAttribute("aria-hidden","false"); }
   };
 }
+
+
 
 

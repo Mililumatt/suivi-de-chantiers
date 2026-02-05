@@ -220,6 +220,10 @@
         </div>
         <div class="card" style="margin-top:12px;">
           <div class="card-title">Gantt global (toutes tâches datées)</div>
+          <div class="row" style="gap:6px;align-items:center;margin-top:4px;">
+            <button class="btn btn-ghost" id="btnToggleMasterVendor">Prestataire</button>
+            <button class="btn btn-ghost" id="btnToggleMasterStatus">Statut</button>
+          </div>
           <div id="masterGantt"></div>
         </div>
 
@@ -361,6 +365,10 @@
         <div class="card">
           <div class="card-title"><span class="card-title-icon">📅</span> Gantt hebdo</div>
           <div id="legend" class="legend"></div>
+          <div class="gantt-toggle-row">
+            <button class="btn btn-ghost" id="btnToggleProjectVendor">Prestataire</button>
+            <button class="btn btn-ghost" id="btnToggleProjectStatus">Statut</button>
+          </div>
           <div id="gantt"></div>
         </div>
         <div class="card" style="margin-top:12px;">
@@ -400,7 +408,7 @@
 <!-- SUPABASE CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- TON APP -->
-<script src="app.js?v=20260205_19"></script>
+<script src="app.js?v=20260205_60"></script>
 <script>
 // Pseudo-login (dissuasif uniquement)
 (function(){
