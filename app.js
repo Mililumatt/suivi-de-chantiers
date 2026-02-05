@@ -160,6 +160,10 @@ let workloadRangeType = "all"; // all | custom | school | civil
 let workloadRangeStart = "";
 let workloadRangeEnd = "";
 let workloadRangeYear = "";
+let workloadRangeTypeProject = "all";
+let workloadRangeStartProject = "";
+let workloadRangeEndProject = "";
+let workloadRangeYearProject = "";
 
 const STATUSES = [
   {v:"CHANTIER_COMPLET", label:"Chantier complet"},
@@ -205,15 +209,68 @@ const parseStatuses = (s)=> (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 const deepClone = (obj)=> JSON.parse(JSON.stringify(obj));
 const siteColor = (_site="")=>"transparent";
 const attrEscape = (s="")=> s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const FLOAT_Z = 1000000;
+const floatingMap = new Map();
+function positionFloating(el, anchor){
+  if(!el || !anchor) return;
+  const rect = anchor.getBoundingClientRect();
+  const top = rect.bottom + 4;
+  const maxH = Math.max(120, window.innerHeight - top - 12);
+  el.style.position = "fixed";
+  el.style.left = `${rect.left}px`;
+  el.style.top = `${top}px`;
+  el.style.width = `${rect.width}px`;
+  el.style.maxHeight = `${maxH}px`;
+  el.style.zIndex = `${FLOAT_Z}`;
+}
+function openFloating(el, anchor){
+  if(!el || !anchor) return;
+  if(!el.__floatParent){
+    el.__floatParent = el.parentElement;
+    el.__floatNext = el.nextSibling;
+  }
+  document.body.appendChild(el);
+  positionFloating(el, anchor);
+  floatingMap.set(el, anchor);
+}
+function closeFloating(el){
+  if(!el || !el.__floatParent) return;
+  floatingMap.delete(el);
+  el.style.position = "";
+  el.style.left = "";
+  el.style.top = "";
+  el.style.width = "";
+  el.style.maxHeight = "";
+  el.style.zIndex = "";
+  if(el.__floatNext) el.__floatParent.insertBefore(el, el.__floatNext);
+  else el.__floatParent.appendChild(el);
+}
 let vendorsCache = [];
+let descCache = [];
 const VENDOR_STORE_KEY = "vendors_registry";
 const VENDOR_DELETE_KEY = "vendors_deleted";
+const DESC_STORE_KEY = "descriptions_registry";
+const DESC_DELETE_KEY = "descriptions_deleted";
 const normalizeVendor = (v="")=> v.trim();
+const normalizeDesc = (v="")=> v.trim();
 const dedupVendors = (arr=[])=>{
   const seen=new Set();
   const out=[];
   arr.forEach(v=>{
     const norm = normalizeVendor(v);
+    if(!norm) return;
+    const key = norm.toLowerCase();
+    if(seen.has(key)) return;
+    seen.add(key);
+    out.push(norm);
+  });
+  return out;
+};
+const dedupDescriptions = (arr=[])=>{
+  const seen=new Set();
+  const out=[];
+  arr.forEach(v=>{
+    const norm = normalizeDesc(v);
     if(!norm) return;
     const key = norm.toLowerCase();
     if(seen.has(key)) return;
@@ -268,6 +325,26 @@ function refreshVendorsList(){
   renderVendorDropdown(current);
 }
 
+function refreshDescriptionsList(){
+  const input = el("t_room");
+  if(!input) return;
+  const registry = loadDescriptionsRegistry();
+  const deleted = new Set(loadDeletedDescriptions().map(x=>x.toLowerCase()));
+  const fromTasks = (state?.tasks||[])
+    .map(t=> normalizeDesc(t.roomNumber||""))
+    .filter(Boolean)
+    .filter(v=> !deleted.has(v.toLowerCase()));
+  descCache = dedupDescriptions([...registry, ...fromTasks])
+    .filter(v=> !deleted.has(v.toLowerCase()))
+    .sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+  const current = normalizeDesc(input.value);
+  if(current && !descCache.map(x=>x.toLowerCase()).includes(current.toLowerCase())){
+    descCache.unshift(current);
+  }
+  saveDescriptionsRegistry(descCache);
+  renderDescriptionDropdown(current);
+}
+
 function setupVendorPicker(){
   const input = el("t_vendor");
   const manageBtn = el("btnManageVendors");
@@ -278,6 +355,8 @@ function setupVendorPicker(){
     if(panel) panel.style.display = open ? "block" : "none";
     wrap?.classList.toggle("vendor-open", !!open);
     card?.classList.toggle("vendor-panel-open", !!open);
+    if(open && input && panel) openFloating(panel, input);
+    else closeFloating(panel);
   };
   if(!input) return;
   const openList = ()=>{
@@ -325,6 +404,65 @@ function setupVendorPicker(){
   }
 }
 
+function setupDescriptionPicker(){
+  const input = el("t_room");
+  const manageBtn = el("btnManageDescriptions");
+  const panel = el("descManagerPanel");
+  const wrap = input ? input.closest(".desc-wrap") : null;
+  const card = input ? input.closest(".card") : null;
+  const setManagerOpen = (open)=>{
+    if(panel) panel.style.display = open ? "block" : "none";
+    wrap?.classList.toggle("desc-open", !!open);
+    card?.classList.toggle("desc-panel-open", !!open);
+    if(open && input && panel) openFloating(panel, input);
+    else closeFloating(panel);
+  };
+  if(!input) return;
+  const openList = ()=>{
+    renderDescriptionDropdown(input.value);
+    showDescriptionDropdown(true);
+  };
+  input.addEventListener("click", openList);
+  input.addEventListener("focus", openList);
+  input.addEventListener("keydown",(e)=>{
+    if(e.key==="ArrowDown" || e.key==="F4"){
+      e.preventDefault();
+      openList();
+    }else if(e.key==="Escape"){
+      showDescriptionDropdown(false);
+    }
+  });
+  input.addEventListener("input", ()=>{
+    renderDescriptionDropdown(input.value);
+    showDescriptionDropdown(true);
+  });
+  document.addEventListener("click",(e)=>{
+    const box = el("descDropdown");
+    if(!box || !input) return;
+    if(!box.contains(e.target) && e.target!==input){ showDescriptionDropdown(false); }
+    if(panel && !panel.contains(e.target) && e.target!==manageBtn){ setManagerOpen(false); }
+  });
+  const box = el("descDropdown");
+  if(box){
+    box.addEventListener("mousedown",(e)=>e.preventDefault()); // empêcher blur avant le click
+  }
+  if(manageBtn){
+    manageBtn.disabled = isLocked;
+    manageBtn.onclick=(e)=>{
+      e.stopPropagation();
+      if(isLocked) return;
+      const visible = panel?.style.display==="block";
+      if(visible){
+        setManagerOpen(false);
+      }else{
+        renderDescriptionManager();
+        setManagerOpen(true);
+        showDescriptionDropdown(false);
+      }
+    };
+  }
+}
+
 function renderVendorDropdown(filter=""){
   const box = el("vendorDropdown");
   const input = el("t_vendor");
@@ -353,6 +491,9 @@ function showVendorDropdown(show){
   if(!box) return;
   box.style.display = show ? "block" : "none";
   box.classList.toggle("open", !!show);
+  const input = el("t_vendor");
+  if(show && input) openFloating(box, input);
+  else closeFloating(box);
 }
 
 function renderVendorManager(){
@@ -412,6 +553,98 @@ function renderVendorManager(){
       renderVendorDropdown(el("t_vendor")?.value||"");
       renderVendorManager();
       renderAll();
+    };
+  });
+}
+
+function renderDescriptionDropdown(filter=""){
+  const box = el("descDropdown");
+  const input = el("t_room");
+  if(!box || !input) return;
+  const deleted = new Set(loadDeletedDescriptions().map(x=>x.toLowerCase()));
+  const q = normalizeDesc(filter||"").toLowerCase();
+  const list = descCache
+    .filter(v=> !deleted.has(v.toLowerCase()))
+    .filter(v=>!q || v.toLowerCase().includes(q))
+    .slice(0,50);
+  if(list.length===0){
+    box.innerHTML = `<div class="vendor-empty">Aucun résultat</div>`;
+  }else{
+    box.innerHTML = list.map(v=>`<div class="vendor-item" role="option" tabindex="0">${attrEscape(v)}</div>`).join("");
+  }
+  box.querySelectorAll(".vendor-item").forEach(item=>{
+    item.onclick=()=>{ input.value=item.textContent; showDescriptionDropdown(false); };
+    item.onkeydown=(e)=>{ if(e.key==="Enter"){ input.value=item.textContent; showDescriptionDropdown(false); } };
+  });
+  showDescriptionDropdown(list.length>0);
+}
+
+function showDescriptionDropdown(show){
+  const box = el("descDropdown");
+  if(!box) return;
+  const input = el("t_room");
+  const wrap = input ? input.closest(".desc-wrap") : null;
+  const card = input ? input.closest(".card") : null;
+  box.style.display = show ? "block" : "none";
+  box.classList.toggle("open", !!show);
+  wrap?.classList.toggle("desc-open", !!show);
+  card?.classList.toggle("desc-panel-open", !!show);
+  if(show && input) openFloating(box, input);
+  else closeFloating(box);
+}
+
+function renderDescriptionManager(){
+  const panel = el("descManagerPanel");
+  if(!panel) return;
+  if(descCache.length===0){
+    panel.innerHTML = `<div class="vendor-empty">Aucune description enregistrée</div>`;
+    return;
+  }
+  panel.innerHTML = dedupDescriptions(descCache).map(v=>`
+    <div class="vendor-row">
+      <span class="vendor-name">${attrEscape(v)}</span>
+      <div class="vendor-actions">
+        <button class="btn btn-ghost desc-rename" data-v="${attrEscape(v)}">Renommer</button>
+        <button class="btn btn-danger desc-delete" data-v="${attrEscape(v)}">Supprimer</button>
+      </div>
+    </div>
+  `).join("");
+  panel.querySelectorAll(".desc-rename").forEach(btn=>{
+    btn.onclick=()=>{
+      const oldName = btn.dataset.v || "";
+      const newName = prompt("Nouvelle description :", oldName) || "";
+      const trimmed = newName.trim();
+      if(!trimmed) return;
+      let deleted = loadDeletedDescriptions().filter(x=> x.toLowerCase()!==oldName.toLowerCase());
+      saveDeletedDescriptions(deleted);
+      descCache = descCache.map(x=> x.toLowerCase()===oldName.toLowerCase() ? trimmed : x);
+      descCache = dedupDescriptions(descCache);
+      descCache = Array.from(new Set(descCache)).sort((a,b)=>a.localeCompare(b,"fr",{sensitivity:"base"}));
+      saveDescriptionsRegistry(descCache);
+      (state?.tasks||[]).forEach(t=>{
+        if((t.roomNumber||"").toLowerCase()===oldName.toLowerCase()) t.roomNumber = trimmed;
+      });
+      markDirty();
+      renderDescriptionDropdown(el("t_room")?.value||"");
+      renderProject();
+    };
+  });
+  panel.querySelectorAll(".desc-delete").forEach(btn=>{
+    btn.onclick=()=>{
+      const name = btn.dataset.v || "";
+      if(!name) return;
+      if(!confirm(`Supprimer "${name}" ?`)) return;
+      descCache = descCache.filter(x=>x.toLowerCase()!==name.toLowerCase());
+      descCache = dedupDescriptions(descCache);
+      saveDescriptionsRegistry(descCache);
+      const deleted = Array.from(new Set([...loadDeletedDescriptions(), name]));
+      saveDeletedDescriptions(deleted);
+      (state?.tasks||[]).forEach(t=>{
+        if((t.roomNumber||"").toLowerCase()===name.toLowerCase()) t.roomNumber = "";
+      });
+      markDirty();
+      renderDescriptionDropdown(el("t_room")?.value||"");
+      renderProject();
     };
   });
 }
@@ -562,6 +795,48 @@ function saveVendorsRegistry(list){
   }
 }
 
+function loadDescriptionsRegistry(){
+  try{
+    const raw = localStorage.getItem(DESC_STORE_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)) return dedupDescriptions(arr);
+    return [];
+  }catch(e){
+    console.warn("Unable to load descriptions registry", e);
+    return [];
+  }
+}
+
+function loadDeletedDescriptions(){
+  try{
+    const raw = localStorage.getItem(DESC_DELETE_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)) return arr.filter(Boolean);
+    return [];
+  }catch(e){
+    console.warn("Unable to load deleted descriptions", e);
+    return [];
+  }
+}
+
+function saveDeletedDescriptions(list){
+  try{
+    localStorage.setItem(DESC_DELETE_KEY, JSON.stringify(list));
+  }catch(e){
+    console.warn("Unable to save deleted descriptions", e);
+  }
+}
+
+function saveDescriptionsRegistry(list){
+  try{
+    localStorage.setItem(DESC_STORE_KEY, JSON.stringify(dedupDescriptions(list)));
+  }catch(e){
+    console.warn("Unable to save descriptions registry", e);
+  }
+}
+
 function load(){
   const skipFileFetch = (window.location && window.location.protocol === "file:");
   const backupPromise = skipFileFetch
@@ -703,10 +978,21 @@ function setLockState(flag){
     if(isLocked) manageBtn.setAttribute("disabled","disabled");
     else manageBtn.removeAttribute("disabled");
   }
+  const manageDescBtn = el("btnManageDescriptions");
+  if(manageDescBtn){
+    manageDescBtn.classList.toggle(lockClass, isLocked);
+    if(isLocked) manageDescBtn.setAttribute("disabled","disabled");
+    else manageDescBtn.removeAttribute("disabled");
+  }
   if(isLocked){
     showVendorDropdown(false);
     const panel = el("vendorManagerPanel");
     if(panel) panel.style.display="none";
+    showDescriptionDropdown(false);
+    const descPanel = el("descManagerPanel");
+    if(descPanel) descPanel.style.display="none";
+    const overlay = el("descOverlay");
+    if(overlay) overlay.classList.remove("show");
   }
   // tab close (supprimer projet)
   const tabCloses = document.querySelectorAll(".tab-close");
@@ -758,53 +1044,64 @@ function getTasksDateBounds(tasks){
   });
   return {min,max};
 }
-function getWorkloadRange(tasks, boundsTasks=tasks){
+function getWorkloadRange(tasks, boundsTasks=tasks, stateRef=null){
   const {min, max} = getTasksDateBounds(boundsTasks);
   if(!min || !max) return {start:null,end:null};
-  const type = workloadRangeType || "all";
+  const type = (stateRef?.type ?? workloadRangeType) || "all";
   if(type==="all"){
     return {start:min, end:max};
   }
   if(type==="custom"){
-    const s = parseInputDate(workloadRangeStart) || min;
-    const e = parseInputDate(workloadRangeEnd) || max;
+    const s = parseInputDate(stateRef?.start ?? workloadRangeStart) || min;
+    const e = parseInputDate(stateRef?.end ?? workloadRangeEnd) || max;
     return {start:s, end:e};
   }
-  const year = parseInt(workloadRangeYear || String(min.getFullYear()),10);
+  const year = parseInt((stateRef?.year ?? workloadRangeYear) || String(min.getFullYear()),10);
   if(type==="civil"){
     return {start:new Date(year,0,1), end:new Date(year,11,31)};
   }
   // school: 1er sept -> 31 août
   return {start:new Date(year,8,1), end:new Date(year+1,7,31)};
 }
-function syncWorkloadFilterUI(tasks, boundsTasks=tasks){
+function syncWorkloadFilterUI(tasks, boundsTasks=tasks, uiIds=null, stateRef=null){
   const typeSel = el("workloadRangeType");
   const yearSel = el("workloadRangeYear");
   const startInput = el("workloadRangeStart");
   const endInput = el("workloadRangeEnd");
-  if(!typeSel || !yearSel || !startInput || !endInput) return;
+  const typeNode = uiIds ? el(uiIds.type) : typeSel;
+  const yearNode = uiIds ? el(uiIds.year) : yearSel;
+  const startNode = uiIds ? el(uiIds.start) : startInput;
+  const endNode = uiIds ? el(uiIds.end) : endInput;
+  if(!typeNode || !yearNode || !startNode || !endNode) return;
   const {min, max} = getTasksDateBounds(boundsTasks);
   if(!min || !max) return;
   const minYear = min.getFullYear() - 1;
   const maxYear = max.getFullYear() + 1;
-  if(!workloadRangeYear) workloadRangeYear = String(min.getFullYear());
-  if(!workloadRangeStart) workloadRangeStart = toDateInput(min);
-  if(!workloadRangeEnd) workloadRangeEnd = toDateInput(max);
+  const st = stateRef || {type:workloadRangeType, year:workloadRangeYear, start:workloadRangeStart, end:workloadRangeEnd};
+  if(!st.year) st.year = String(min.getFullYear());
+  if(!st.start) st.start = toDateInput(min);
+  if(!st.end) st.end = toDateInput(max);
   // options année
   let opts="";
   for(let y=minYear; y<=maxYear; y++){
     opts += `<option value="${y}">${y}</option>`;
   }
-  yearSel.innerHTML = opts;
-  yearSel.value = workloadRangeYear;
-  typeSel.value = workloadRangeType || "all";
-  startInput.value = workloadRangeStart;
-  endInput.value = workloadRangeEnd;
-  const showDates = (typeSel.value==="custom");
-  const showYear = (typeSel.value==="civil" || typeSel.value==="school");
-  startInput.style.display = showDates ? "inline-block" : "none";
-  endInput.style.display = showDates ? "inline-block" : "none";
-  yearSel.style.display = showYear ? "inline-block" : "none";
+  yearNode.innerHTML = opts;
+  yearNode.value = st.year;
+  typeNode.value = st.type || "all";
+  startNode.value = st.start;
+  endNode.value = st.end;
+  const showDates = (typeNode.value==="custom");
+  const showYear = (typeNode.value==="civil" || typeNode.value==="school");
+  startNode.style.display = showDates ? "inline-block" : "none";
+  endNode.style.display = showDates ? "inline-block" : "none";
+  yearNode.style.display = showYear ? "inline-block" : "none";
+  if(stateRef){
+    stateRef.type = typeNode.value;
+    stateRef.year = yearNode.value;
+    stateRef.start = startNode.value;
+    stateRef.end = endNode.value;
+  }
 }
 function isWeekday(d){
   const day = d.getDay();
@@ -1018,8 +1315,11 @@ function renderGantt(projectId){
     })();
 
     html+=`<tr data-task="${t.id}">`;
+    const p = state?.projects?.find(x=>x.id===t.projectId);
+    const sub = (p?.subproject || "").trim();
     const taskDesc = (t.roomNumber || "").trim();
-    html+=`<td class="gantt-task-col-project"><b><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span></b> <span class="gantt-task-name">${attrEscape(taskDesc)}</span></td>`;
+    const label = [sub, taskDesc].filter(Boolean).join(" — ");
+    html+=`<td class="gantt-task-col-project"><b><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span></b> <span class="gantt-task-name">${attrEscape(label)}</span></td>`;
     html+=`<td class="gantt-vendor-cell"><div class="vendor-stack">${vendorBadges}</div></td>`;
     html+=`<td class="gantt-status-cell"><div class="gantt-status-stack"><div class="status-row"><span>${statusLabels(mainStatus)}</span></div></div></td>`;
 
@@ -1173,7 +1473,7 @@ function renderMasterGantt(){
   });
 }
 
-function exportSvgToPdf(svgId, title="Export"){
+function exportSvgToPdf(svgId, title="Export", pieId=null, tasksOverride=null){
   const svg = document.getElementById(svgId);
   if(!svg) return;
 
@@ -1183,8 +1483,8 @@ function exportSvgToPdf(svgId, title="Export"){
     * { font-family: "Segoe UI", Arial, sans-serif; }
     .wl-axis text{font-size:11px;fill:#0f172a;}
     .wl-bg{fill:url(#brushed);}
-    .wl-bar-internal{fill:url(#grad-int);}
-    .wl-bar-external{fill:url(#grad-ext);}
+    .wl-bar-internal{}
+    .wl-bar-external{}
     .wl-grid{stroke:#e5e7eb;stroke-width:1;}
     .wl-grid-vert{stroke:#e5e7eb;stroke-width:1;stroke-dasharray:2 3;}
     .wl-value{font-size:10px;fill:#0f172a;}
@@ -1199,7 +1499,7 @@ function exportSvgToPdf(svgId, title="Export"){
   const url = URL.createObjectURL(blob);
   const img = new Image();
   const { width, height } = svg.getBoundingClientRect();
-  const pieSvg = document.getElementById("workloadPie");
+  const pieSvg = pieId ? document.getElementById(pieId) : null;
   const fallbackWidth = svg.viewBox?.baseVal?.width || svg.clientWidth || 900;
   const fallbackHeight = svg.viewBox?.baseVal?.height || svg.clientHeight || 260;
   img.onload = function(){
@@ -1223,7 +1523,7 @@ function exportSvgToPdf(svgId, title="Export"){
     const w = window.open("","_blank");
     if(!w) return;
     const nowLabel = new Date().toLocaleDateString("fr-FR");
-    const sourceTasks = filteredTasks();
+    const sourceTasks = tasksOverride || filteredTasks();
     const range = getWorkloadRange(sourceTasks, state.tasks || sourceTasks);
     const totals = computeWorkloadData(sourceTasks || [], "week", range.start, range.end);
     const tInt = totals.reduce((s,d)=>s+d.internal,0);
@@ -1309,20 +1609,38 @@ function exportSvgToPdf(svgId, title="Export"){
   img.src = url;
 }
 
-function renderWorkloadChart(tasks){
+function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null, boundsTasks=null, autoReset=false){
   const mode = "week";
-  syncWorkloadFilterUI(tasks, state.tasks || tasks);
-  const range = getWorkloadRange(tasks, state.tasks || tasks);
-  const data = computeWorkloadData(tasks, mode, range.start, range.end);
-  const svg = el("workloadChart");
+  const bounds = boundsTasks || tasks;
+  syncWorkloadFilterUI(tasks, bounds, uiIds, stateRef);
+  const range = getWorkloadRange(tasks, bounds, stateRef);
+  let data = computeWorkloadData(tasks, mode, range.start, range.end);
+  if(autoReset && tasks.length>0 && data.length===0 && stateRef){
+    // reset to "all" if filter excludes all data for this project
+    stateRef.type = "all";
+    stateRef.start = "";
+    stateRef.end = "";
+    stateRef.year = "";
+    syncWorkloadFilterUI(tasks, bounds, uiIds, stateRef);
+    const range2 = getWorkloadRange(tasks, bounds, stateRef);
+    data = computeWorkloadData(tasks, mode, range2.start, range2.end);
+  }
+  const svg = el(chartId);
   if(!svg) return;
+  const pieSvg = pieId ? el(pieId) : null;
+  const idPrefix = (chartId || "workload").replace(/[^a-zA-Z0-9_-]/g,"");
+  const gradIntId = `${idPrefix}-grad-int`;
+  const gradExtId = `${idPrefix}-grad-ext`;
+  const brushedId = `${idPrefix}-brushed`;
+  const brushedBaseId = `${idPrefix}-brushed-base`;
+  const barShadowId = `${idPrefix}-barShadow`;
   const w=900, h=320, m={l:60,r:24,t:30,b:64};
   const fontFamily = `"Segoe UI", Arial, sans-serif`;
   svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
   svg.style.fontFamily = fontFamily;
   svg.setAttribute("font-family", fontFamily);
   svg.innerHTML="";
-  const pieSvg = el("workloadPie");
+  if(pieSvg) pieSvg.innerHTML="";
   if(data.length===0){
     svg.innerHTML = `<text x="${w/2}" y="${h/2}" text-anchor="middle" fill="#6b7280" font-size="12">Aucune tâche datée</text>`;
     if(pieSvg){
@@ -1360,13 +1678,15 @@ function renderWorkloadChart(tasks){
     const gx = xStart + idx*(groupW+groupGap);
     const xInt = gx;
     const xExt = gx + barW + innerGap;
-    const hInt = (d.internal/maxVal)*chartH;
-    const hExt = (d.external/maxVal)*chartH;
+    let hInt = (d.internal/maxVal)*chartH;
+    let hExt = (d.external/maxVal)*chartH;
+    if(d.internal > 0 && hInt < 6) hInt = 6;
+    if(d.external > 0 && hExt < 6) hExt = 6;
     const yBase = m.t + chartH;
     const yInt = yBase - hInt;
     const yExt = yBase - hExt;
-    bars+=`<rect class="wl-bar-internal" fill="url(#grad-int)" filter="url(#barShadow)" x="${xInt}" y="${yInt}" width="${barW}" height="${hInt}" rx="3" ry="3"></rect>`;
-    bars+=`<rect class="wl-bar-external" fill="url(#grad-ext)" filter="url(#barShadow)" x="${xExt}" y="${yExt}" width="${barW}" height="${hExt}" rx="3" ry="3"></rect>`;
+    bars+=`<rect class="wl-bar-internal" fill="url(#${gradIntId})" filter="url(#${barShadowId})" x="${xInt}" y="${yInt}" width="${barW}" height="${hInt}" rx="3" ry="3"></rect>`;
+    bars+=`<rect class="wl-bar-external" fill="url(#${gradExtId})" filter="url(#${barShadowId})" x="${xExt}" y="${yExt}" width="${barW}" height="${hExt}" rx="3" ry="3"></rect>`;
     const lbl = keyToLabel(d.key, mode);
     const lx = gx + groupW/2;
     const ly = h - m.b + 14;
@@ -1382,39 +1702,39 @@ function renderWorkloadChart(tasks){
   const pctInt = Math.round((totalInt/totalAll)*100);
   const pctExt = 100 - pctInt;
   const legend=`<g transform="translate(${w-210},${m.t})">
-    <rect class="wl-bar-internal" x="0" y="0" width="12" height="12" rx="3"></rect>
+    <rect x="0" y="0" width="12" height="12" rx="3" fill="url(#${gradIntId})"></rect>
     <text class="wl-axis" x="18" y="11">Interne ${pctInt}%</text>
-    <rect class="wl-bar-external" x="0" y="20" width="12" height="12" rx="3"></rect>
+    <rect x="0" y="20" width="12" height="12" rx="3" fill="url(#${gradExtId})"></rect>
     <text class="wl-axis" x="18" y="31">Externe ${pctExt}%</text>
   </g>`;
   const defs = `
     <defs>
-      <linearGradient id="brushed-base" x1="0" x2="1" y1="0" y2="0">
+      <linearGradient id="${brushedBaseId}" x1="0" x2="1" y1="0" y2="0">
         <stop offset="0%" stop-color="#f2f3f5"/>
         <stop offset="45%" stop-color="#e3e6ea"/>
         <stop offset="65%" stop-color="#f7f8fa"/>
         <stop offset="100%" stop-color="#d9dde2"/>
       </linearGradient>
-      <pattern id="brushed" width="6" height="6" patternUnits="userSpaceOnUse">
-        <rect width="6" height="6" fill="url(#brushed-base)"/>
+      <pattern id="${brushedId}" width="6" height="6" patternUnits="userSpaceOnUse">
+        <rect width="6" height="6" fill="url(#${brushedBaseId})"/>
         <path d="M0 1 H6 M0 3 H6 M0 5 H6" stroke="#cfd3d9" stroke-width="0.4" opacity="0.45"/>
       </pattern>
-      <linearGradient id="grad-int" x1="0" x2="0" y1="0" y2="1">
+      <linearGradient id="${gradIntId}" x1="0" x2="0" y1="0" y2="1">
         <stop offset="0%" stop-color="#22c55e" stop-opacity="0.98"/>
         <stop offset="55%" stop-color="#16a34a" stop-opacity="0.92"/>
         <stop offset="100%" stop-color="#15803d" stop-opacity="0.9"/>
       </linearGradient>
-      <linearGradient id="grad-ext" x1="0" x2="0" y1="0" y2="1">
+      <linearGradient id="${gradExtId}" x1="0" x2="0" y1="0" y2="1">
         <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.98"/>
         <stop offset="55%" stop-color="#64748b" stop-opacity="0.92"/>
         <stop offset="100%" stop-color="#475569" stop-opacity="0.9"/>
       </linearGradient>
-      <filter id="barShadow" x="-20%" y="-20%" width="140%" height="160%">
+      <filter id="${barShadowId}" x="-20%" y="-20%" width="140%" height="160%">
         <feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#0b1424" flood-opacity="0.18"/>
       </filter>
     </defs>
   `;
-  svg.innerHTML = `${defs}<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}"></rect><g>${grid}</g><g>${bars}</g>${legend}`;
+  svg.innerHTML = `${defs}<rect class="wl-bg" x="0" y="0" width="${w}" height="${h}" fill="url(#${brushedId})"></rect><g>${grid}</g><g>${bars}</g>${legend}`;
 
   if(pieSvg){
     const pw=720, ph=360;
@@ -1435,7 +1755,7 @@ function renderWorkloadChart(tasks){
       const large = end - start <= 180 ? 0 : 1;
       return `M ${cx} ${cy} L ${s.x} ${s.y} A ${r} ${r} 0 ${large} 0 ${e.x} ${e.y} Z`;
     };
-    let pieMarkup = `<rect class="wl-bg" x="0" y="0" width="${pw}" height="${ph}"></rect>`;
+    let pieMarkup = `<rect class="wl-bg" x="0" y="0" width="${pw}" height="${ph}" fill="url(#${brushedId})"></rect>`;
     if(totalInt + totalExt > 0){
       const intAngle = (totalInt / pieTotal) * 360;
       const gap = 8;
@@ -1444,28 +1764,48 @@ function renderWorkloadChart(tasks){
       const extMid = startA + intAngle + (360-intAngle)/2;
       const intOff = polar(0,0,gap,intMid);
       const extOff = polar(0,0,gap,extMid);
-      const intPath = arcPath(cx+intOff.x, cy+intOff.y, r, startA, startA+intAngle);
-      const extPath = arcPath(cx+extOff.x, cy+extOff.y, r, startA+intAngle, 360);
-      const intLabelPos = polar(cx+intOff.x, cy+intOff.y, r*0.62, intMid);
-      const extLabelPos = polar(cx+extOff.x, cy+extOff.y, r*0.62, extMid);
+      if(totalExt === 0){
+        pieMarkup += `
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${gradIntId})"></circle>
+          <text class="wl-axis" x="${cx}" y="${cy}" text-anchor="middle">${pctInt}%</text>
+          <text class="wl-value" x="${cx}" y="${cy + 14}" text-anchor="middle">${totalInt} j</text>
+        `;
+      }else if(totalInt === 0){
+        pieMarkup += `
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${gradExtId})"></circle>
+          <text class="wl-axis" x="${cx}" y="${cy}" text-anchor="middle">${pctExt}%</text>
+          <text class="wl-value" x="${cx}" y="${cy + 14}" text-anchor="middle">${totalExt} j</text>
+        `;
+      }else{
+        const intPath = arcPath(cx+intOff.x, cy+intOff.y, r, startA, startA+intAngle);
+        const extPath = arcPath(cx+extOff.x, cy+extOff.y, r, startA+intAngle, 360);
+        const intLabelPos = polar(cx+intOff.x, cy+intOff.y, r*0.62, intMid);
+        const extLabelPos = polar(cx+extOff.x, cy+extOff.y, r*0.62, extMid);
+        pieMarkup += `
+          <path d="${intPath}" fill="url(#${gradIntId})"></path>
+          <path d="${extPath}" fill="url(#${gradExtId})"></path>
+          <text class="wl-axis" x="${intLabelPos.x}" y="${intLabelPos.y}" text-anchor="middle">${pctInt}%</text>
+          <text class="wl-axis" x="${extLabelPos.x}" y="${extLabelPos.y}" text-anchor="middle">${pctExt}%</text>
+          <text class="wl-value" x="${intLabelPos.x}" y="${intLabelPos.y + 14}" text-anchor="middle">${totalInt} j</text>
+          <text class="wl-value" x="${extLabelPos.x}" y="${extLabelPos.y + 14}" text-anchor="middle">${totalExt} j</text>
+        `;
+      }
       pieMarkup += `
-        <path d="${intPath}" fill="url(#grad-int)"></path>
-        <path d="${extPath}" fill="url(#grad-ext)"></path>
-        <text class="wl-axis" x="${intLabelPos.x}" y="${intLabelPos.y}" text-anchor="middle">${pctInt}%</text>
-        <text class="wl-axis" x="${extLabelPos.x}" y="${extLabelPos.y}" text-anchor="middle">${pctExt}%</text>
-        <text class="wl-value" x="${intLabelPos.x}" y="${intLabelPos.y + 14}" text-anchor="middle">${totalInt} j</text>
-        <text class="wl-value" x="${extLabelPos.x}" y="${extLabelPos.y + 14}" text-anchor="middle">${totalExt} j</text>
         <text class="wl-axis" x="${cx}" y="${cy + r + 26}" text-anchor="middle">Répartition Interne / Externe</text>
         <g transform="translate(${cx-150},${cy + r + 42})">
-          <rect class="wl-bar-internal" x="0" y="0" width="12" height="12" rx="3"></rect>
+          <rect x="0" y="0" width="12" height="12" rx="3" fill="url(#${gradIntId})"></rect>
           <text class="wl-axis" x="18" y="11">Interne ${pctInt}% • ${totalInt} j</text>
-          <rect class="wl-bar-external" x="170" y="0" width="12" height="12" rx="3"></rect>
+          <rect x="170" y="0" width="12" height="12" rx="3" fill="url(#${gradExtId})"></rect>
           <text class="wl-axis" x="188" y="11">Externe ${pctExt}% • ${totalExt} j</text>
         </g>
       `;
     }
     pieSvg.innerHTML = `${defs}${pieMarkup}`;
   }
+}
+
+function renderWorkloadChart(tasks){
+  renderWorkloadChartFor(tasks, "workloadChart", "workloadPie", null, null, state.tasks || tasks, false);
 }
 
 function renderFilters(){
@@ -1830,7 +2170,23 @@ function renderProject(){
 
   renderGantt(p.id);
   renderProjectTasks(p.id);
+  const projectTasks = state.tasks.filter(t=>t.projectId===p.id);
+  const projRange = {type:workloadRangeTypeProject, year:workloadRangeYearProject, start:workloadRangeStartProject, end:workloadRangeEndProject};
+  renderWorkloadChartFor(
+    projectTasks,
+    "workloadChartProject",
+    "workloadPieProject",
+    {type:"workloadRangeTypeProject", year:"workloadRangeYearProject", start:"workloadRangeStartProject", end:"workloadRangeEndProject"},
+    projRange,
+    projectTasks,
+    true
+  );
+  workloadRangeTypeProject = projRange.type;
+  workloadRangeYearProject = projRange.year;
+  workloadRangeStartProject = projRange.start;
+  workloadRangeEndProject = projRange.end;
   refreshVendorsList();
+  refreshDescriptionsList();
 }
 
 function renderAll(){
@@ -1839,6 +2195,7 @@ function renderAll(){
     state = defaultState();
   }
   refreshVendorsList();
+  refreshDescriptionsList();
   // réinitialiser les filtres visibles pour éviter un filtrage bloquant
   ["filterProject","filterStatus","filterSearch","filterStartAfter","filterEndBefore"].forEach(id=>{
     const n=el(id);
@@ -1873,14 +2230,13 @@ function bind(){
     selectedProjectId=null; selectedTaskId=null;
     renderAll();
   });
-  el("btnProjectExport")?.addEventListener("click", ()=>{
-    preparePrint();
-    window.print();
+  el("btnProjectExport")?.addEventListener("click", (e)=>{
+    e.preventDefault();
+    if(typeof openExportProjectModal === "function") openExportProjectModal();
   });
-  el("btnExportMaster")?.addEventListener("click", ()=>{
-    selectedProjectId = null;
-    preparePrint();
-    window.print();
+  el("btnExportMaster")?.addEventListener("click", (e)=>{
+    e.preventDefault();
+    if(typeof openExportMasterModal === "function") openExportMasterModal();
   });
   el("workloadRangeType")?.addEventListener("change", ()=>{
     workloadRangeType = el("workloadRangeType")?.value || "all";
@@ -1898,9 +2254,78 @@ function bind(){
     workloadRangeEnd = el("workloadRangeEnd")?.value || "";
     renderWorkloadChart(filteredTasks());
   });
-  el("btnExportWorkload")?.addEventListener("click", ()=>{
-    exportSvgToPdf("workloadChart","Charge de travail");
+  el("workloadRangeTypeProject")?.addEventListener("change", ()=>{
+    workloadRangeTypeProject = el("workloadRangeTypeProject")?.value || "all";
+    if(selectedProjectId) renderProject();
   });
+  el("workloadRangeYearProject")?.addEventListener("change", ()=>{
+    workloadRangeYearProject = el("workloadRangeYearProject")?.value || "";
+    if(selectedProjectId) renderProject();
+  });
+  el("workloadRangeStartProject")?.addEventListener("change", ()=>{
+    workloadRangeStartProject = el("workloadRangeStartProject")?.value || "";
+    if(selectedProjectId) renderProject();
+  });
+  el("workloadRangeEndProject")?.addEventListener("change", ()=>{
+    workloadRangeEndProject = el("workloadRangeEndProject")?.value || "";
+    if(selectedProjectId) renderProject();
+  });
+  el("btnExportWorkload")?.addEventListener("click", ()=>{
+    exportSvgToPdf("workloadChart","Charge de travail", "workloadPie", filteredTasks());
+  });
+  el("btnExportWorkloadProject")?.addEventListener("click", ()=>{
+    if(!selectedProjectId) return;
+    const projectTasks = state.tasks.filter(t=>t.projectId===selectedProjectId);
+    exportSvgToPdf("workloadChartProject","Charge de travail (projet)", "workloadPieProject", projectTasks);
+  });
+  const modal = el("exportProjectModal");
+  const btnNo = el("btnExportNoCharts");
+  const btnYes = el("btnExportWithCharts");
+  if(modal && btnNo && btnYes){
+    const closeModal = ()=>{
+      modal.classList.add("hidden");
+      modal.style.display="none";
+      modal.setAttribute("aria-hidden","true");
+    };
+    btnNo.onclick = ()=>{
+      closeModal();
+      preparePrint({includeGraphs:false});
+      window.print();
+    };
+    btnYes.onclick = ()=>{
+      closeModal();
+      preparePrint({includeGraphs:true});
+      window.print();
+    };
+    modal.addEventListener("click",(e)=>{
+      if(e.target===modal) closeModal();
+    });
+  }
+  const masterModal = el("exportMasterModal");
+  const btnMNo = el("btnExportMasterNoCharts");
+  const btnMYes = el("btnExportMasterWithCharts");
+  if(masterModal && btnMNo && btnMYes){
+    const closeMaster = ()=>{
+      masterModal.classList.add("hidden");
+      masterModal.style.display="none";
+      masterModal.setAttribute("aria-hidden","true");
+    };
+    btnMNo.onclick = ()=>{
+      closeMaster();
+      selectedProjectId = null;
+      preparePrint({includeGraphs:false});
+      window.print();
+    };
+    btnMYes.onclick = ()=>{
+      closeMaster();
+      selectedProjectId = null;
+      preparePrint({includeGraphs:true});
+      window.print();
+    };
+    masterModal.addEventListener("click",(e)=>{
+      if(e.target===masterModal) closeMaster();
+    });
+  }
   el("btnAddProject")?.addEventListener("click", ()=>{
     if(isLocked) return;
     const id = uid();
@@ -1949,6 +2374,7 @@ function bind(){
     // Dupliquer les valeurs affichées pour faciliter la création en série
     selectedTaskId=null;
     el("btnNewTask")?.classList.add("btn-armed");
+    setStatusSelection("");
   });
   el("btnDeleteTask")?.addEventListener("click", ()=>{
     if(isLocked) return;
@@ -1982,12 +2408,14 @@ function bind(){
     markDirty();
     renderProject();
     refreshVendorsList();
+    refreshDescriptionsList();
   });
   ["filterProject","filterStatus","filterSearch","filterStartAfter","filterEndBefore"].forEach(id=>{
     const n=el(id); 
     if(n) n.addEventListener("input", ()=>{ renderMaster(); saveUIState(); markDirty(); });
   });
   setupVendorPicker();
+  setupDescriptionPicker();
   // Affichage date du jour + copyright
   const brandSub = el("brandSub");
   if(brandSub){
@@ -2043,6 +2471,13 @@ function bind(){
       if(node) window.flatpickr(node, fpOpts);
     });
   }
+  // repositionnement des dropdowns flottants
+  window.addEventListener("resize", ()=>{
+    floatingMap.forEach((anchor, el)=> positionFloating(el, anchor));
+  });
+  window.addEventListener("scroll", ()=>{
+    floatingMap.forEach((anchor, el)=> positionFloating(el, anchor));
+  }, true);
 
   // Repositionnement du menu multiselect en fixed (pour qu'il reste au-dessus)
   const statusMenu = el("t_status_menu");
@@ -2053,7 +2488,7 @@ function bind(){
       if(portal) return portal;
       portal = document.createElement("div");
       portal.style.position="fixed";
-      portal.style.zIndex="200000";
+      portal.style.zIndex="1000000";
       portal.style.left="0";
       portal.style.top="0";
       document.body.appendChild(portal);
@@ -2153,7 +2588,8 @@ bind();
 renderAll();
 
 // Préparation impression : cartouche + légende
-function preparePrint(){
+function preparePrint(opts={}){
+  const includeGraphs = opts.includeGraphs !== false;
   document.body.classList.add("print-mode");
   const tpl = document.getElementById("printTemplate");
   if(!tpl) return;
@@ -2195,6 +2631,12 @@ function preparePrint(){
     if(tableWrap) wrap.appendChild(tableWrap.cloneNode(true));
     const ganttCard = document.querySelector("#masterGantt")?.closest(".card");
     if(ganttCard) wrap.appendChild(ganttCard.cloneNode(true));
+    if(includeGraphs){
+      const masterWorkload = document.querySelector("#workloadChart")?.closest(".card");
+      if(masterWorkload) wrap.appendChild(masterWorkload.cloneNode(true));
+      const masterPie = document.querySelector("#workloadPie")?.closest(".card");
+      if(masterPie) wrap.appendChild(masterPie.cloneNode(true));
+    }
     container.querySelector(".print-order")?.appendChild(wrap);
   }else{
     // Projet : réutiliser l'affichage courant (table tâches + gantt projet)
@@ -2208,6 +2650,12 @@ function preparePrint(){
       clone.querySelectorAll("#legend").forEach(n=>n.remove());
       wrap.appendChild(clone);
     }
+    if(includeGraphs){
+      const projWorkload = document.querySelector("#workloadChartProject")?.closest(".card");
+      if(projWorkload) wrap.appendChild(projWorkload.cloneNode(true));
+      const projPie = document.querySelector("#workloadPieProject")?.closest(".card");
+      if(projPie) wrap.appendChild(projPie.cloneNode(true));
+    }
     container.querySelector(".print-order")?.appendChild(wrap);
   }
 }
@@ -2220,6 +2668,14 @@ function cleanupPrint(){
 
 if(typeof window !== "undefined"){
   window.onafterprint = cleanupPrint;
+  window.openExportProjectModal = ()=>{
+    const modal = el("exportProjectModal");
+    if(modal){ modal.classList.remove("hidden"); modal.style.display="flex"; modal.setAttribute("aria-hidden","false"); }
+  };
+  window.openExportMasterModal = ()=>{
+    const modal = el("exportMasterModal");
+    if(modal){ modal.classList.remove("hidden"); modal.style.display="flex"; modal.setAttribute("aria-hidden","false"); }
+  };
 }
 
 

@@ -11,14 +11,14 @@
       "id": "0c644af019c05700845",
       "name": "Internat St Gervais",
       "site": "LGT",
-      "subproject": "Rénovation",
+      "subproject": "CH 011",
       "constraints": ""
     },
     {
       "id": "83fac1eb19c15d95804",
       "name": "Salle des profs",
       "site": "CDM",
-      "subproject": "",
+      "subproject": "Rénovation",
       "constraints": ""
     },
     {
@@ -31,7 +31,7 @@
     {
       "id": "c152982019c284c5446",
       "name": "Espace SCSE",
-      "site": "",
+      "site": "CDM",
       "subproject": "",
       "constraints": ""
     }
@@ -44,9 +44,9 @@
       "owner": "Équipe interne",
       "start": "2026-02-09",
       "status": "PREPARATION",
+      "vendor": "",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Vidage & Protection",
-      "vendor": ""
+      "roomNumber": "Vidage & Protection"
     },
     {
       "id": "f490f0e019c0571bee2",
@@ -55,9 +55,9 @@
       "owner": "Équipe interne",
       "start": "2026-01-26",
       "status": "ETUDE",
+      "vendor": "",
       "projectId": "0c644af019c05700845",
-      "roomNumber": "CH011 Étude & Appros",
-      "vendor": ""
+      "roomNumber": "Fin de Chantier"
     },
     {
       "id": "057fbc5519c1df27433",
@@ -67,7 +67,7 @@
       "status": "HUIS_SER",
       "vendor": "MARION",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Pose pans fixes"
+      "roomNumber": ""
     },
     {
       "id": "b0fc5a2f19c1e8067ab",
@@ -75,9 +75,9 @@
       "owner": "Équipe interne",
       "start": "2026-02-23",
       "status": "PEINTURE",
+      "vendor": "",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Enduits & Peinture",
-      "vendor": ""
+      "roomNumber": "Enduits & Peinture"
     },
     {
       "id": "aa4f131519c1e82440b",
@@ -85,9 +85,9 @@
       "owner": "Équipe interne",
       "start": "2026-02-11",
       "status": "ELECTRICITE",
+      "vendor": "",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Dépose & repose CF/Cf",
-      "vendor": ""
+      "roomNumber": "Dépose & repose CF/Cf"
     },
     {
       "id": "8ac26e8a19c221422b0",
@@ -97,7 +97,7 @@
       "status": "PREPARATION",
       "vendor": "",
       "projectId": "0c644af019c05700845",
-      "roomNumber": "CH011 Vidage & Protection"
+      "roomNumber": "Vidage & Protection"
     },
     {
       "id": "32dc025b19c2215340b",
@@ -105,9 +105,9 @@
       "owner": "Équipe interne",
       "start": "2026-02-23",
       "status": "AMENAGEMENTS",
+      "vendor": "",
       "projectId": "0c644af019c05700845",
-      "roomNumber": "CH011 Réinstallation & Livraison",
-      "vendor": ""
+      "roomNumber": "Fin de Chantier"
     },
     {
       "id": "647eda1319c230944d8",
@@ -127,7 +127,7 @@
       "status": "ETUDE",
       "vendor": "",
       "projectId": "83fac1eb19c15d95804",
-      "roomNumber": "Rénovation"
+      "roomNumber": "Étude"
     },
     {
       "id": "75f862d619c241bfe17",
@@ -135,9 +135,9 @@
       "owner": "Équipe interne",
       "start": "2026-02-02",
       "status": "ETUDE",
+      "vendor": "",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": "Étude & Appros",
-      "vendor": ""
+      "roomNumber": ""
     },
     {
       "id": "3068784419c27a966e0",
@@ -147,7 +147,7 @@
       "status": "HUIS_SER",
       "vendor": "Turboself",
       "projectId": "fd47202319c27a87d06",
-      "roomNumber": "Pose des 1 Serrure"
+      "roomNumber": ""
     },
     {
       "id": "218f59dc19c27a9b7be",
@@ -157,7 +157,7 @@
       "status": "HUIS_SER",
       "vendor": "",
       "projectId": "fd47202319c27a87d06",
-      "roomNumber": "Pose 13 sérrures"
+      "roomNumber": ""
     },
     {
       "id": "9380be4319c27b0af51",
@@ -167,7 +167,7 @@
       "status": "MOBILIER",
       "vendor": "DPC",
       "projectId": "83fac1eb19c15d95804",
-      "roomNumber": "Rénovation"
+      "roomNumber": "Livr Mobilier"
     },
     {
       "id": "ab36b4d119c284ee0b9",
@@ -177,7 +177,7 @@
       "status": "ELECTRICITE",
       "vendor": "JOUSSET",
       "projectId": "c152982019c284c5446",
-      "roomNumber": "Aménagements Pro"
+      "roomNumber": ""
     },
     {
       "id": "dca6e6a819c2c8f0a29",
@@ -187,7 +187,7 @@
       "status": "PEINTURE",
       "vendor": "",
       "projectId": "0c644af019c05700845",
-      "roomNumber": "CH011 Enduits & Peinture"
+      "roomNumber": "Enduits & Peinture"
     }
   ],
   "ui": {
