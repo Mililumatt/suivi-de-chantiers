@@ -1634,7 +1634,7 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
   const brushedId = `${idPrefix}-brushed`;
   const brushedBaseId = `${idPrefix}-brushed-base`;
   const barShadowId = `${idPrefix}-barShadow`;
-  const w=900, h=320, m={l:60,r:24,t:30,b:64};
+  const w=900, h=320, m={l:60,r:24,t:44,b:64};
   const fontFamily = `"Segoe UI", Arial, sans-serif`;
   svg.setAttribute("viewBox",`0 0 ${w} ${h}`);
   svg.style.fontFamily = fontFamily;
@@ -1701,7 +1701,7 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
   const totalAll = Math.max(1, totalInt + totalExt);
   const pctInt = Math.round((totalInt/totalAll)*100);
   const pctExt = 100 - pctInt;
-  const legend=`<g transform="translate(${w-210},${m.t})">
+  const legend=`<g transform="translate(${w-210},12)">
     <rect x="0" y="0" width="12" height="12" rx="3" fill="url(#${gradIntId})"></rect>
     <text class="wl-axis" x="18" y="11">Interne ${pctInt}%</text>
     <rect x="0" y="20" width="12" height="12" rx="3" fill="url(#${gradExtId})"></rect>

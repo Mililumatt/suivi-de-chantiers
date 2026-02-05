@@ -47,7 +47,7 @@ body{
 }
 .actions{display:flex;gap:8px;flex-wrap:wrap;}
 
-.layout{display:grid;grid-template-columns:320px 1fr;gap:14px;padding:14px;max-width:1600px;margin:0 auto;}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:14px;padding:14px;width:100%;max-width:none;margin:0;}
 .sidebar{
   background:linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(226,224,218,0.9) 45%, rgba(255,255,255,0.98) 100%);
   border:1px solid rgba(255,255,255,0.6);

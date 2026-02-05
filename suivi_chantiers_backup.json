@@ -188,6 +188,26 @@
       "vendor": "",
       "projectId": "0c644af019c05700845",
       "roomNumber": "Enduits & Peinture"
+    },
+    {
+      "id": "22724dd819c2dde25b3",
+      "end": "2026-02-20",
+      "owner": "Équipe interne",
+      "start": "2026-02-16",
+      "status": "ELECTRICITE",
+      "vendor": "",
+      "projectId": "83fac1eb19c15d95804",
+      "roomNumber": "Dépose & repose CF/Cf"
+    },
+    {
+      "id": "43c46b0b19c2ddfeeb9",
+      "end": "2026-04-17",
+      "owner": "Prestataire externe",
+      "start": "2026-04-13",
+      "status": "HUIS_SER",
+      "vendor": "",
+      "projectId": "83fac1eb19c15d95804",
+      "roomNumber": "Maçonerie"
     }
   ],
   "ui": {
