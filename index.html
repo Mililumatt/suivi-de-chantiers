@@ -94,6 +94,10 @@
         <input id="lock-email" class="lock-input" type="email" name="email" placeholder="Email" autocomplete="username" inputmode="email" spellcheck="false" autocapitalize="none" autocorrect="off" list="lock-users" required />
         <datalist id="lock-users"></datalist>
         <input id="lock-pwd" class="lock-input" type="password" placeholder="Mot de passe" autocomplete="current-password" name="password" required />
+        <label style="display:flex;align-items:center;gap:8px;justify-content:flex-start;font-size:12px;color:#475569;margin:4px 0 8px;">
+          <input id="lock-remember" type="checkbox" style="width:auto;margin:0;" />
+          Se souvenir de moi (local)
+        </label>
         <button id="lock-submit" class="lock-btn" type="submit">Entrer</button>
       </form>
       <div class="lock-msg">Mot de passe requis (local, non sécurisé)</div>
@@ -461,6 +465,7 @@
   const userList = document.getElementById("lock-users");
   const form = document.getElementById("lock-form");
   const pwd  = document.getElementById("lock-pwd");
+  const remember = document.getElementById("lock-remember");
   const btn  = document.getElementById("lock-submit");
   const gear = document.getElementById("gear-btn");
   const panel= document.getElementById("gear-panel");
@@ -474,6 +479,7 @@
       return "sha256:"+hex;
     });
   }
+  const REMEMBER_KEY = "remember_login_v1";
   function loadUsers(){
     try{
       const raw = localStorage.getItem(USERS_KEY);
@@ -500,12 +506,7 @@
       localStorage.setItem(USERS_KEY, JSON.stringify([{name:"Admin", email:"admin@local", role:"admin", hash:HASH.replace("sha256:","")}]));
     }
   }
-  async function tryUnlock(){
-    ensureDefaultAdmin();
-    populateUsers();
-    const h = await hash(pwd.value||"");
-    const mail = (userInput?.value||"").trim().toLowerCase();
-    if(!mail){ alert("Email requis"); return; }
+  async function tryUnlockWithHash(h, mail){
     const users = loadUsers();
     const u = users.find(x=>`sha256:${x.hash}`===h && (x.email||"").toLowerCase()===mail);
     if(u){
@@ -515,6 +516,23 @@
       localStorage.setItem("last_login_email", mail);
       lock.classList.add("hidden");
       if(window.setLockState) window.setLockState(false);
+      return true;
+    }
+    return false;
+  }
+  async function tryUnlock(){
+    ensureDefaultAdmin();
+    populateUsers();
+    const h = await hash(pwd.value||"");
+    const mail = (userInput?.value||"").trim().toLowerCase();
+    if(!mail){ alert("Email requis"); return; }
+    const ok = await tryUnlockWithHash(h, mail);
+    if(ok){
+      if(remember?.checked){
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email: mail, hash: h }));
+      }else{
+        localStorage.removeItem(REMEMBER_KEY);
+      }
       return true;
     }else{
       alert("Mot de passe incorrect");
@@ -574,6 +592,19 @@
   }else{
     if(window.setLockState) window.setLockState(true);
   }
+  // remember me (local)
+  try{
+    const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || "null");
+    if(remembered?.email){
+      if(userInput) userInput.value = remembered.email;
+      if(remember) remember.checked = true;
+      const mail = (remembered.email||"").trim().toLowerCase();
+      const h = remembered.hash;
+      if(h && !disabled && !unlocked){
+        tryUnlockWithHash(h, mail);
+      }
+    }
+  }catch(e){}
 })();
 </script>
 
