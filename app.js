@@ -1293,6 +1293,21 @@ function setLockState(flag){
   if(isLocked){
     closeConfigModal();
   }
+  // état du verrou + boutons autoriser/interdire
+  const lockLabel = el("topbarLock");
+  if(lockLabel){
+    lockLabel.textContent = isLocked ? "Verrou : Interdit" : "Verrou : Autorisé";
+  }
+  const allowBtn = el("btn_allow_lock");
+  const forbidBtn = el("btn_forbid_lock");
+  if(allowBtn){
+    allowBtn.disabled = !isLocked;
+    allowBtn.classList.toggle("is-disabled", !isLocked);
+  }
+  if(forbidBtn){
+    forbidBtn.disabled = isLocked;
+    forbidBtn.classList.toggle("is-disabled", isLocked);
+  }
   // gestion prestataires : désactiver + masquer panels/dropdown
   const manageBtn = el("btnManageVendors");
   if(manageBtn){

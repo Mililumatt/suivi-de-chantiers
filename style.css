@@ -47,6 +47,16 @@ body{
   color:#0b1424;
   font-size:13px;
 }
+.topbar-lock{
+  text-align:center;
+  font-weight:800;
+  color:#0b1424;
+  font-size:13px;
+  padding:4px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.7);
+  border:1px solid rgba(0,0,0,0.08);
+}
 .brand{font-weight:800;color:var(--text);}
 .brand{font-size:22px;}
 .copyright{font-size:12px;font-weight:700;color:#475569;margin-left:6px;}
