@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
@@ -45,7 +45,7 @@
     .lock-card{
       background:#fff; padding:18px 20px; border-radius:14px;
       box-shadow:0 18px 36px rgba(0,0,0,0.24);
-      width:300px; text-align:center; font-family:var(--sans);
+      width:360px; text-align:center; font-family:var(--sans);
     }
     .lock-title{font-weight:800;font-size:17px;margin-bottom:6px;color:#0f172a;}
     .lock-input{width:100%;padding:9px 10px;border-radius:10px;border:1px solid #d1d5db;font-size:13px;margin:8px 0;}
@@ -90,8 +90,12 @@
   <div id="lockscreen">
     <div class="lock-card">
       <div class="lock-title">Accès restreint</div>
-      <input id="lock-pwd" class="lock-input" type="password" placeholder="Mot de passe" />
-      <button id="lock-submit" class="lock-btn">Entrer</button>
+      <form id="lock-form" autocomplete="on">
+        <input id="lock-email" class="lock-input" type="email" name="username" placeholder="Email" autocomplete="username" list="lock-users" required />
+        <datalist id="lock-users"></datalist>
+        <input id="lock-pwd" class="lock-input" type="password" placeholder="Mot de passe" autocomplete="current-password" name="password" required />
+        <button id="lock-submit" class="lock-btn" type="submit">Entrer</button>
+      </form>
       <div class="lock-msg">Mot de passe requis (local, non sécurisé)</div>
     </div>
   </div>
@@ -99,7 +103,7 @@
   <div id="exportProjectModal" class="modal hidden" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-title">Export PDF du projet</div>
-      <div class="modal-sub">Choisis le mode d’export :</div>
+      <div class="modal-sub">Choisis le mode dâ€™export :</div>
       <div class="modal-actions">
         <button class="btn btn-export-no" id="btnExportNoCharts">Export sans graphiques</button>
         <button class="btn btn-export-yes" id="btnExportWithCharts">Export avec graphiques</button>
@@ -108,8 +112,8 @@
   </div>
   <div id="exportMasterModal" class="modal hidden" aria-hidden="true">
     <div class="modal-card">
-      <div class="modal-title">Export PDF du tableau maître</div>
-      <div class="modal-sub">Choisis le mode d’export :</div>
+      <div class="modal-title">Export PDF du tableau maÃ®tre</div>
+      <div class="modal-sub">Choisis le mode dâ€™export :</div>
       <div class="modal-actions">
         <button class="btn btn-export-no" id="btnExportMasterNoCharts">Export sans graphiques</button>
         <button class="btn btn-export-yes" id="btnExportMasterWithCharts">Export avec graphiques</button>
@@ -119,7 +123,7 @@
   <div id="configModal" class="modal hidden" aria-hidden="true">
     <div class="modal-card" style="min-width:340px;">
       <div class="modal-title">Configuration</div>
-      <div class="modal-sub">Paramètres du dashboard</div>
+      <div class="modal-sub">ParamÃ¨tres du dashboard</div>
       <label class="label">Nom du dashboard</label>
       <input class="input" id="cfg_name" placeholder="Nom du dashboard" />
       <label class="label">Adresse HTTP</label>
@@ -144,7 +148,7 @@
         </div>
         <div id="cfg_users_list" class="config-users-list"></div>
       </div>
-      <div class="config-footer">Concepteur : Sébastien DUC <span class="config-copyright">©</span></div>
+      <div class="config-footer">Concepteur : SÃ©bastien DUC <span class="config-copyright">Â©</span></div>
       <div class="modal-actions" style="margin-top:10px;">
         <button class="btn btn-ghost" id="btnConfigClose">Fermer</button>
         <button class="btn btn-primary" id="btnConfigSave">Enregistrer</button>
@@ -154,16 +158,16 @@
   <header class="topbar">
     <div>
       <div class="brand" id="brandTitle">Suivi de Chantiers</div>
-      <div class="subtitle" id="brandSub">Tableau maître • Projets • Gantt • Exports locaux</div>
+      <div class="subtitle" id="brandSub">Tableau maÃ®tre â€¢ Projets â€¢ Gantt â€¢ Exports locaux</div>
     </div>
     <div class="topbar-user" id="topbarUser"></div>
     <div class="actions">
-      <button class="btn btn-primary" id="btnSave">💾 Sauvegarder</button>
+      <button class="btn btn-primary" id="btnSave">ðŸ’¾ Sauvegarder</button>
       <button class="btn" id="btnConfig" style="display:none;">Configuration</button>
       <div class="gear-wrap">
-        <button id="gear-btn" title="Options accès">⚙️</button>
+        <button id="gear-btn" title="Options accÃ¨s">âš™ï¸</button>
         <div id="gear-panel">
-          <small>Autoriser = déverrouiller. Interdire = verrouiller.</small>
+          <small>Autoriser = dÃ©verrouiller. Interdire = verrouiller.</small>
           <div class="gear-actions">
             <button class="btn btn-success" id="btn_allow_lock">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a5 5 0 0 1 5 5v3h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h9V7a2 2 0 1 0-4 0v2H8V7a4 4 0 0 1 4-5Z"/></svg>
@@ -182,12 +186,12 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="section">
-        <div class="section-title"><span class="section-title-icon">🗂️</span> Onglets</div>
+        <div class="section-title"><span class="section-title-icon">ðŸ—‚ï¸</span> Onglets</div>
         <div id="tabs" class="tabs"></div>
       </div>
 
       <div class="section">
-        <div class="section-title"><span class="section-title-icon">🔎</span> Filtres (tableau maître)</div>
+        <div class="section-title"><span class="section-title-icon">ðŸ”Ž</span> Filtres (tableau maÃ®tre)</div>
         <label class="label">Projet</label>
         <select class="input" id="filterProject"></select>
 
@@ -199,7 +203,7 @@
 
         <div class="grid2">
           <div>
-            <label class="label">Début après</label>
+            <label class="label">DÃ©but aprÃ¨s</label>
             <input class="input" id="filterStartAfter" type="date" placeholder="jj/mm/aaaa" />
           </div>
           <div>
@@ -208,14 +212,14 @@
           </div>
         </div>
         <div class="row">
-          <button class="btn btn-ghost" onclick="document.getElementById('filterProject').value='';document.getElementById('filterStatus').value='';document.getElementById('filterSearch').value='';document.getElementById('filterStartAfter').value='';document.getElementById('filterEndBefore').value='';renderAll();">Réinitialiser</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('filterProject').value='';document.getElementById('filterStatus').value='';document.getElementById('filterSearch').value='';document.getElementById('filterStartAfter').value='';document.getElementById('filterEndBefore').value='';renderAll();">RÃ©initialiser</button>
         </div>
       </div>
 
       <div class="section">
-        <div class="section-title"><span class="section-title-icon">➕</span> Ajouter</div>
+        <div class="section-title"><span class="section-title-icon">âž•</span> Ajouter</div>
         <button class="btn btn-primary" id="btnAddProject">+ Nouveau projet</button>
-        <button class="btn btn-primary" id="btnAddTask">+ Nouvelle tâche</button>
+        <button class="btn btn-primary" id="btnAddTask">+ Nouvelle tÃ¢che</button>
       </div>
     </aside>
 
@@ -223,8 +227,8 @@
       <section class="panel" id="viewMaster">
         <div class="panel-head">
           <div>
-            <div class="panel-title"><span class="panel-title-icon">📊</span> Tableau maître</div>
-            <div class="panel-sub">Toutes les tâches • clic = édition</div>
+            <div class="panel-title"><span class="panel-title-icon">ðŸ“Š</span> Tableau maÃ®tre</div>
+            <div class="panel-sub">Toutes les tÃ¢ches â€¢ clic = Ã©dition</div>
             <div class="panel-metrics" id="masterMetrics"></div>
             <div class="panel-live" id="masterLive"></div>
           </div>
@@ -235,7 +239,7 @@
         <div id="kpis" class="kpis"></div>
         <div class="panel-controls" style="margin-bottom:6px;">
           <span class="filters-indicator" id="filtersBadge">Tri/filtre actif</span>
-          <button class="btn btn-ghost" id="btnResetSortMaster">Réinitialiser tri</button>
+          <button class="btn btn-ghost" id="btnResetSortMaster">RÃ©initialiser tri</button>
         </div>
         <div class="tablewrap">
           <table class="table" id="masterTable">
@@ -243,19 +247,19 @@
                 <tr>
                 <th data-sort="site">Site</th>
                 <th data-sort="project">Projet</th>
-                <th data-sort="task">Tâche</th>
+                <th data-sort="task">TÃ¢che</th>
                 <th data-sort="status">Statut</th>
-                <th data-sort="start">Début</th>
+                <th data-sort="start">DÃ©but</th>
                 <th data-sort="end">Fin</th>
                 <th data-sort="owner">Responsable</th>
-                <th data-sort="duration">Durée (jours)</th>
+                <th data-sort="duration">DurÃ©e (jours)</th>
               </tr>
               </thead>
             <tbody></tbody>
           </table>
         </div>
         <div class="card" style="margin-top:12px;">
-          <div class="card-title">Gantt global (toutes tâches datées)</div>
+          <div class="card-title">Gantt global (toutes tÃ¢ches datÃ©es)</div>
           <div class="row" style="gap:6px;align-items:center;margin-top:4px;">
             <button class="btn btn-ghost" id="btnToggleMasterVendor">Prestataire</button>
             <button class="btn btn-ghost" id="btnToggleMasterStatus">Statut</button>
@@ -270,9 +274,9 @@
               <label class="label" style="margin-top:0;">Filtre</label>
               <select class="input" id="workloadRangeType" style="width:140px;">
                 <option value="all">Tout</option>
-                <option value="custom">Période</option>
-                <option value="school">Année scolaire</option>
-                <option value="civil">Année civile</option>
+                <option value="custom">PÃ©riode</option>
+                <option value="school">AnnÃ©e scolaire</option>
+                <option value="civil">AnnÃ©e civile</option>
               </select>
               <select class="input" id="workloadRangeYear" style="width:110px;"></select>
               <input class="input" id="workloadRangeStart" type="date" style="width:140px;" />
@@ -285,7 +289,7 @@
           </div>
         </div>
         <div class="card" style="margin-top:12px;">
-          <div class="card-title">Répartition Interne / Externe</div>
+          <div class="card-title">RÃ©partition Interne / Externe</div>
           <div id="workloadPieWrap" style="overflow:auto;">
             <svg id="workloadPie" width="100%" height="360" viewBox="0 0 720 360"></svg>
           </div>
@@ -295,29 +299,29 @@
       <section class="panel hidden" id="viewProject">
         <div class="panel-head">
           <div>
-            <div class="panel-title" id="projectTitle"><span class="panel-title-icon">🏗️</span> Projet</div>
-            <div class="panel-sub" id="projectSub">Détails • Gantt</div>
+            <div class="panel-title" id="projectTitle"><span class="panel-title-icon">ðŸ—ï¸</span> Projet</div>
+            <div class="panel-sub" id="projectSub">DÃ©tails â€¢ Gantt</div>
             <div class="panel-metrics" id="projectMetrics"></div>
             <div class="panel-live" id="projectLive"></div>
           </div>
           <div class="row">
-            <button class="btn btn-ghost" id="btnBack">← Retour</button>
+            <button class="btn btn-ghost" id="btnBack">â† Retour</button>
             <button class="btn" id="btnProjectExport" onclick="openExportProjectModal()">Export projet</button>
           </div>
         </div>
 
         <div class="grid2">
           <div class="card">
-            <div class="card-title"><span class="card-title-icon">📝</span> Infos projet</div>
+            <div class="card-title"><span class="card-title-icon">ðŸ“</span> Infos projet</div>
             <label class="label">Nom</label>
             <input class="input" id="p_name" />
             <label class="label">Sous-projet</label>
-            <input class="input" id="p_subproject" placeholder="ex: Phase 1, Bâtiment B, Étages 2-3" />
+            <input class="input" id="p_subproject" placeholder="ex: Phase 1, BÃ¢timent B, Ã‰tages 2-3" />
             <label class="label">Site / Zone</label>
             <input class="input" id="p_site" />
-            <label class="label">Contraintes clés</label>
+            <label class="label">Contraintes clÃ©s</label>
             <input class="input" id="p_constraints" />
-              <!-- Dates de contraintes retirées -->
+              <!-- Dates de contraintes retirÃ©es -->
             <div class="row">
               <button class="btn btn-primary" id="btnSaveProject">Enregistrer projet</button>
               <button class="btn btn-danger" id="btnDeleteProject">Supprimer projet</button>
@@ -325,51 +329,51 @@
           </div>
 
           <div class="card">
-            <div class="card-title"><span class="card-title-icon">🛠️</span> Édition tâche <span class="num-badge" id="t_num_badge" style="margin-left:8px; display:none;"></span></div>
+            <div class="card-title"><span class="card-title-icon">ðŸ› ï¸</span> Ã‰dition tÃ¢che <span class="num-badge" id="t_num_badge" style="margin-left:8px; display:none;"></span></div>
             <div id="descOverlay" class="desc-overlay"></div>
             <label class="label">Description</label>
             <div class="desc-wrap">
-              <input class="input" id="t_room" placeholder="ex: Chambre 11, Local élec, Couloir A" autocomplete="off" aria-label="Description" />
-              <button type="button" class="btn icon-btn desc-manage-btn" id="btnManageDescriptions" aria-label="Gérer les descriptions">⚙️</button>
+              <input class="input" id="t_room" placeholder="ex: Chambre 11, Local Ã©lec, Couloir A" autocomplete="off" aria-label="Description" />
+              <button type="button" class="btn icon-btn desc-manage-btn" id="btnManageDescriptions" aria-label="GÃ©rer les descriptions">âš™ï¸</button>
               <div id="descDropdown" class="desc-dropdown" role="listbox" aria-label="Suggestions description" style="display:none"></div>
               <div id="descManagerPanel" class="vendor-panel" style="display:none"></div>
             </div>
 
-            <label class="label">Statuts / Corps d'état (multi-sélection)</label>
+            <label class="label">Statuts / Corps d'Ã©tat (multi-sÃ©lection)</label>
             <div class="multiselect" id="t_status_wrap">
-              <div class="multiselect-display" id="t_status_display">Sélectionner…</div>
+              <div class="multiselect-display" id="t_status_display">SÃ©lectionnerâ€¦</div>
               <div class="multiselect-menu hidden" id="t_status_menu"></div>
             </div>
 
-            <label class="label">Intervenants (équipe interne / prestataire externe)</label>
+            <label class="label">Intervenants (Ã©quipe interne / prestataire externe)</label>
             <select class="input" id="t_owner">
-              <option value="">— Choisir —</option>
-              <option value="Équipe interne">Équipe interne</option>
+              <option value="">â€” Choisir â€”</option>
+              <option value="Ã‰quipe interne">Ã‰quipe interne</option>
               <option value="Prestataire externe">Prestataire externe</option>
             </select>
 
             <label class="label">Prestataire externe</label>
             <div class="vendor-wrap">
-              <input class="input" id="t_vendor" placeholder="Nom du prestataire (trié A→Z)" autocomplete="off" aria-label="Prestataire externe" />
-              <button type="button" class="btn icon-btn vendor-manage-btn" id="btnManageVendors" aria-label="Gérer les prestataires">⚙️</button>
+              <input class="input" id="t_vendor" placeholder="Nom du prestataire (triÃ© Aâ†’Z)" autocomplete="off" aria-label="Prestataire externe" />
+              <button type="button" class="btn icon-btn vendor-manage-btn" id="btnManageVendors" aria-label="GÃ©rer les prestataires">âš™ï¸</button>
               <div id="vendorDropdown" class="vendor-dropdown" role="listbox" aria-label="Suggestions prestataire" style="display:none"></div>
               <div id="vendorManagerPanel" class="vendor-panel" style="display:none"></div>
             </div>
 
             <div class="grid2">
               <div>
-                <label class="label">Début</label>
+                <label class="label">DÃ©but</label>
                 <input class="input" id="t_start" type="date" placeholder="jj/mm/aaaa" />
               </div>
               <div>
                 <label class="label">Fin</label>
                 <input class="input" id="t_end" type="date" placeholder="jj/mm/aaaa" />
               </div>
-              <div id="t_dates_warn" class="date-warn hidden">La date de fin est avant la date de début.</div>
+              <div id="t_dates_warn" class="date-warn hidden">La date de fin est avant la date de dÃ©but.</div>
             </div>
 
             <div class="row">
-              <button class="btn btn-primary" id="btnSaveTask">Enregistrer tâche</button>
+              <button class="btn btn-primary" id="btnSaveTask">Enregistrer tÃ¢che</button>
               <button class="btn btn-ghost" id="btnNewTask">Nouvelle</button>
               <button class="btn btn-danger" id="btnDeleteTask">Supprimer</button>
             </div>
@@ -377,21 +381,21 @@
         </div>
 
         <div class="card">
-          <div class="card-title"><span class="card-title-icon">📋</span> Tâches du projet</div>
+          <div class="card-title"><span class="card-title-icon">ðŸ“‹</span> TÃ¢ches du projet</div>
           <div class="panel-controls">
             <span class="filters-indicator" id="projectFiltersBadge">Tri/filtre actif</span>
-            <button class="btn btn-ghost" id="btnResetSortProject">Réinitialiser tri</button>
+            <button class="btn btn-ghost" id="btnResetSortProject">RÃ©initialiser tri</button>
           </div>
           <div class="tablewrap">
             <table class="table" id="projectTasksTable">
               <thead>
                 <tr>
-                  <th style="width:120px" data-sort="num">N°</th>
+                  <th style="width:120px" data-sort="num">NÂ°</th>
                   <th data-sort="task">Description</th>
                   <th data-sort="status">Statuts</th>
-                  <th data-sort="start">Début</th>
+                  <th data-sort="start">DÃ©but</th>
                   <th data-sort="end">Fin</th>
-                  <th data-sort="duration">Durée (jours)</th>
+                  <th data-sort="duration">DurÃ©e (jours)</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -400,7 +404,7 @@
         </div>
 
         <div class="card">
-          <div class="card-title"><span class="card-title-icon">📅</span> Gantt hebdo</div>
+          <div class="card-title"><span class="card-title-icon">ðŸ“…</span> Gantt hebdo</div>
           <div id="legend" class="legend"></div>
           <div class="gantt-toggle-row">
             <button class="btn btn-ghost" id="btnToggleProjectVendor">Prestataire</button>
@@ -415,9 +419,9 @@
               <label class="label" style="margin-top:0;">Filtre</label>
               <select class="input" id="workloadRangeTypeProject" style="width:140px;">
                 <option value="all">Tout</option>
-                <option value="custom">Période</option>
-                <option value="school">Année scolaire</option>
-                <option value="civil">Année civile</option>
+                <option value="custom">PÃ©riode</option>
+                <option value="school">AnnÃ©e scolaire</option>
+                <option value="civil">AnnÃ©e civile</option>
               </select>
               <select class="input" id="workloadRangeYearProject" style="width:110px;"></select>
               <input class="input" id="workloadRangeStartProject" type="date" style="width:140px;" />
@@ -430,7 +434,7 @@
           </div>
         </div>
         <div class="card" style="margin-top:12px;">
-          <div class="card-title">Répartition Interne / Externe (projet)</div>
+          <div class="card-title">RÃ©partition Interne / Externe (projet)</div>
           <div id="workloadPieProjectWrap" style="overflow:auto;">
             <svg id="workloadPieProject" width="100%" height="360" viewBox="0 0 720 360"></svg>
           </div>
@@ -445,13 +449,16 @@
 <!-- SUPABASE CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- TON APP -->
-<script src="app.js?v=20260205_85"></script>
+<script src="app.js?v=20260205_89"></script>
 <script>
 // Pseudo-login (dissuasif uniquement)
 (function(){
   const HASH = "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; // SHA-256 du mot de passe "admin"
   const USERS_KEY = "dashboard_users_v1";
   const lock = document.getElementById("lockscreen");
+  const userInput = document.getElementById("lock-email");
+  const userList = document.getElementById("lock-users");
+  const form = document.getElementById("lock-form");
   const pwd  = document.getElementById("lock-pwd");
   const btn  = document.getElementById("lock-submit");
   const gear = document.getElementById("gear-btn");
@@ -472,21 +479,39 @@
       return raw ? JSON.parse(raw) : [];
     }catch(e){ return []; }
   }
+  function populateUsers(){
+    const users = loadUsers();
+    if(!userList) return;
+    userList.innerHTML = users.map(u=>{
+      const email = (u.email||"").trim();
+      const label = `${u.name||""} (${email||"sans email"})`;
+      return `<option value="${email}" label="${label}"></option>`;
+    }).join("");
+    const last = localStorage.getItem("last_login_email") || "";
+    if(last && userInput){
+      userInput.value = last;
+    }
+  }
+  window.populateLoginUsers = populateUsers;
   function ensureDefaultAdmin(){
     const users = loadUsers();
     if(users.length===0){
-      localStorage.setItem(USERS_KEY, JSON.stringify([{name:"Admin", email:"", role:"admin", hash:HASH.replace("sha256:","")}]));
+      localStorage.setItem(USERS_KEY, JSON.stringify([{name:"Admin", email:"admin@local", role:"admin", hash:HASH.replace("sha256:","")}]));
     }
   }
   async function tryUnlock(){
     ensureDefaultAdmin();
+    populateUsers();
     const h = await hash(pwd.value||"");
+    const mail = (userInput?.value||"").trim().toLowerCase();
+    if(!mail){ alert("Email requis"); return; }
     const users = loadUsers();
-    const u = users.find(x=>`sha256:${x.hash}`===h);
+    const u = users.find(x=>`sha256:${x.hash}`===h && (x.email||"").toLowerCase()===mail);
     if(u){
       sessionStorage.setItem("unlocked","1");
       sessionStorage.setItem("current_user", u.name||"");
       sessionStorage.setItem("current_role", u.role||"user");
+      localStorage.setItem("last_login_email", mail);
       lock.classList.add("hidden");
       if(window.setLockState) window.setLockState(false);
     }else{
@@ -496,12 +521,14 @@
   // gear toggle
   gear.onclick = ()=> panel.classList.toggle("show");
   allowBtn.onclick = async ()=>{
-    const pass = prompt("Mot de passe pour autoriser ?");
+    const mail = prompt("Email admin pour autoriser ?");
+    if(!mail) return;
+    const pass = prompt("Mot de passe admin ?");
     if(!pass) return;
     const h = await hash(pass);
     ensureDefaultAdmin();
     const users = loadUsers();
-    const u = users.find(x=>`sha256:${x.hash}`===h && x.role==="admin");
+    const u = users.find(x=>`sha256:${x.hash}`===h && x.role==="admin" && (x.email||"").toLowerCase()===mail.toLowerCase());
     if(u){
       localStorage.setItem("lock_disabled","1");
       sessionStorage.setItem("unlocked","1");
@@ -519,14 +546,18 @@
     sessionStorage.removeItem("unlocked");
     panel.classList.remove("show");
     pwd.value="";
-    lock.classList.remove("hidden"); // réaffiche immédiatement
+    lock.classList.remove("hidden"); // rÃ©affiche immÃ©diatement
     if(window.setLockState) window.setLockState(true);
   };
-  btn.onclick = tryUnlock;
+  btn.onclick = (e)=>{ e.preventDefault(); tryUnlock(); };
+  if(form){
+    form.addEventListener("submit", (e)=>{ e.preventDefault(); tryUnlock(); });
+  }
   pwd.onkeydown = (e)=>{ if(e.key==="Enter") tryUnlock(); };
 
-  // auto-unlock si bypass activé ou session déjà validée
+  // auto-unlock si bypass activÃ© ou session dÃ©jÃ  validÃ©e
   ensureDefaultAdmin();
+  populateUsers();
   const disabled = localStorage.getItem("lock_disabled")==="1";
   const unlocked = sessionStorage.getItem("unlocked")==="1";
   if(disabled || unlocked){
@@ -538,7 +569,7 @@
 })();
 </script>
 
-  <!-- Bloc imprimable (cartouche + légende) injecté en JS -->
+  <!-- Bloc imprimable (cartouche + lÃ©gende) injectÃ© en JS -->
   <template id="printTemplate">
     <div class="print-order">
       <div class="print-header print-block" id="printHeader">
@@ -550,3 +581,4 @@
   </template>
 </body>
 </html>
+

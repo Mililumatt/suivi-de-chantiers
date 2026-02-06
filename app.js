@@ -138,6 +138,7 @@ async function loadUsersFromSupabase(){
     if(error){ console.warn("Supabase users select error", error); return false; }
     if(!data || !data.users_json) return false;
     saveUsers(data.users_json);
+    if(typeof window.populateLoginUsers === "function") window.populateLoginUsers();
     return true;
   }catch(e){
     console.warn("loadUsersFromSupabase failed", e);
