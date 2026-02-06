@@ -116,14 +116,50 @@
       </div>
     </div>
   </div>
+  <div id="configModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card" style="min-width:340px;">
+      <div class="modal-title">Configuration</div>
+      <div class="modal-sub">Paramètres du dashboard</div>
+      <label class="label">Nom du dashboard</label>
+      <input class="input" id="cfg_name" placeholder="Nom du dashboard" />
+      <label class="label">Adresse HTTP</label>
+      <input class="input" id="cfg_http" placeholder="https://..." />
+      <label class="label">URL Front (GitHub)</label>
+      <input class="input" id="cfg_front" placeholder="https://github.com/..." />
+      <label class="label">URL Back (Supabase)</label>
+      <input class="input" id="cfg_back" placeholder="https://..." />
+      <div id="cfg_users_section" class="config-users">
+        <div class="config-users-title">Utilisateurs / Administrateurs</div>
+        <div class="config-users-row">
+          <input class="input" id="cfg_user_name" placeholder="Nom d'utilisateur" />
+          <input class="input" id="cfg_user_email" placeholder="Email" />
+          <select class="input" id="cfg_user_role">
+            <option value="admin">Admin</option>
+            <option value="user">Utilisateur</option>
+          </select>
+        </div>
+        <div class="config-users-row">
+          <input class="input" id="cfg_user_pass" type="password" placeholder="Mot de passe" />
+          <button class="btn btn-primary" id="btnUserAdd">Ajouter</button>
+        </div>
+        <div id="cfg_users_list" class="config-users-list"></div>
+      </div>
+      <div class="config-footer">Concepteur : Sébastien DUC <span class="config-copyright">©</span></div>
+      <div class="modal-actions" style="margin-top:10px;">
+        <button class="btn btn-ghost" id="btnConfigClose">Fermer</button>
+        <button class="btn btn-primary" id="btnConfigSave">Enregistrer</button>
+      </div>
+    </div>
+  </div>
   <header class="topbar">
     <div>
       <div class="brand" id="brandTitle">Suivi de Chantiers</div>
       <div class="subtitle" id="brandSub">Tableau maître • Projets • Gantt • Exports locaux</div>
     </div>
+    <div class="topbar-user" id="topbarUser"></div>
     <div class="actions">
-      <button class="btn" id="btnExport">Export CSV</button>
       <button class="btn btn-primary" id="btnSave">💾 Sauvegarder</button>
+      <button class="btn" id="btnConfig" style="display:none;">Configuration</button>
       <div class="gear-wrap">
         <button id="gear-btn" title="Options accès">⚙️</button>
         <div id="gear-panel">
@@ -329,6 +365,7 @@
                 <label class="label">Fin</label>
                 <input class="input" id="t_end" type="date" placeholder="jj/mm/aaaa" />
               </div>
+              <div id="t_dates_warn" class="date-warn hidden">La date de fin est avant la date de début.</div>
             </div>
 
             <div class="row">
@@ -408,11 +445,12 @@
 <!-- SUPABASE CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- TON APP -->
-<script src="app.js?v=20260205_60"></script>
+<script src="app.js?v=20260205_85"></script>
 <script>
 // Pseudo-login (dissuasif uniquement)
 (function(){
   const HASH = "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; // SHA-256 du mot de passe "admin"
+  const USERS_KEY = "dashboard_users_v1";
   const lock = document.getElementById("lockscreen");
   const pwd  = document.getElementById("lock-pwd");
   const btn  = document.getElementById("lock-submit");
@@ -428,11 +466,29 @@
       return "sha256:"+hex;
     });
   }
+  function loadUsers(){
+    try{
+      const raw = localStorage.getItem(USERS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function ensureDefaultAdmin(){
+    const users = loadUsers();
+    if(users.length===0){
+      localStorage.setItem(USERS_KEY, JSON.stringify([{name:"Admin", email:"", role:"admin", hash:HASH.replace("sha256:","")}]));
+    }
+  }
   async function tryUnlock(){
+    ensureDefaultAdmin();
     const h = await hash(pwd.value||"");
-    if(h===HASH){
+    const users = loadUsers();
+    const u = users.find(x=>`sha256:${x.hash}`===h);
+    if(u){
       sessionStorage.setItem("unlocked","1");
+      sessionStorage.setItem("current_user", u.name||"");
+      sessionStorage.setItem("current_role", u.role||"user");
       lock.classList.add("hidden");
+      if(window.setLockState) window.setLockState(false);
     }else{
       alert("Mot de passe incorrect");
     }
@@ -443,9 +499,14 @@
     const pass = prompt("Mot de passe pour autoriser ?");
     if(!pass) return;
     const h = await hash(pass);
-    if(h===HASH){
+    ensureDefaultAdmin();
+    const users = loadUsers();
+    const u = users.find(x=>`sha256:${x.hash}`===h && x.role==="admin");
+    if(u){
       localStorage.setItem("lock_disabled","1");
       sessionStorage.setItem("unlocked","1");
+      sessionStorage.setItem("current_user", u.name||"");
+      sessionStorage.setItem("current_role", u.role||"admin");
       lock.classList.add("hidden");
       if(window.setLockState) window.setLockState(false);
     }else{
@@ -465,6 +526,7 @@
   pwd.onkeydown = (e)=>{ if(e.key==="Enter") tryUnlock(); };
 
   // auto-unlock si bypass activé ou session déjà validée
+  ensureDefaultAdmin();
   const disabled = localStorage.getItem("lock_disabled")==="1";
   const unlocked = sessionStorage.getItem("unlocked")==="1";
   if(disabled || unlocked){

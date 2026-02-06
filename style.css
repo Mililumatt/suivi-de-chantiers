@@ -38,6 +38,14 @@ body{
   backdrop-filter:blur(8px);
   border-bottom:1px solid var(--line);
   box-shadow:var(--shadow);
+  gap:12px;
+}
+.topbar-user{
+  flex:1;
+  text-align:center;
+  font-weight:800;
+  color:#0b1424;
+  font-size:13px;
 }
 .brand{font-weight:800;color:var(--text);}
 .brand{font-size:22px;}
@@ -211,9 +219,9 @@ body{
   position:sticky;top:0;z-index:1;
   cursor: pointer;
 }
-.table th[data-sort]::after{content:" ⇅";font-size:11px;color:#cbd5e1;margin-left:4px;}
-.table th.sorted-asc::after{content:" ▲";color:#475569;}
-.table th.sorted-desc::after{content:" ▼";color:#475569;}
+.table th[data-sort]::after{content:" ▲▼";font-size:11px;color:#64748b;margin-left:6px;opacity:1;}
+.table th.sorted-asc::after{content:" ▲";color:#0f172a;opacity:1;}
+.table th.sorted-desc::after{content:" ▼";color:#0f172a;opacity:1;}
 .table th[data-sort]:hover{background:linear-gradient(180deg, rgba(226,226,222,0.96) 0%, rgba(212,209,202,0.9) 100%);}
 .table td{
   padding:4px 6px;
@@ -248,7 +256,72 @@ body{
 .grid2 > .card{height:100%; display:flex; flex-direction:column;}
 .card{padding:10px;}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
-.label{font-size:12px;color:#475569;margin-top:6px;display:block;}
+.label{font-size:12px;color:#334155;margin-top:6px;display:block;font-weight:700;}
+.date-warn{
+  font-size:11px;
+  color:#b91c1c;
+  font-weight:700;
+  margin-top:4px;
+}
+.config-footer{
+  margin-top:10px;
+  font-size:12px;
+  color:#475569;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.config-users{
+  margin-top:10px;
+  padding-top:8px;
+  border-top:1px dashed rgba(0,0,0,0.12);
+}
+.config-users-title{
+  font-size:12px;
+  font-weight:800;
+  color:#0b1424;
+  margin-bottom:6px;
+}
+.config-users-row{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  margin-bottom:6px;
+  flex-wrap:wrap;
+}
+.config-users-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.config-user-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:6px 8px;
+  border:1px solid rgba(0,0,0,0.1);
+  border-radius:8px;
+  background:rgba(255,255,255,0.9);
+}
+.config-user-meta{
+  font-size:11px;
+  color:#475569;
+  font-weight:700;
+}
+.config-user-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.config-copyright{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:16px;height:16px;
+  border-radius:50%;
+  border:1px solid rgba(0,0,0,0.2);
+  font-size:11px;
+  color:#0f172a;
+  background:#fff;
+}
 .input, textarea, select{
   width:100%;padding:6px 7px;border-radius:9px;border:1px solid rgba(0,0,0,0.08);font:inherit;font-size:11px;
   background:linear-gradient(185deg, rgba(248,247,244,0.98) 0%, rgba(232,229,223,0.94) 100%);
@@ -365,6 +438,7 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 
 .gantt-empty{padding:10px;color:var(--muted);font-size:12px;}
 .gantt-week{font-weight:500;color:#64748b;}
+.gantt-week-date{font-size:10px;color:#6b7280;font-weight:600;margin-top:2px;}
 .gantt-toggle-row{
   display:flex;
   gap:6px;
@@ -392,6 +466,13 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 }
 .week-cell:hover::after{
   opacity:1;
+}
+.week-cell.week-today{
+  background:linear-gradient(180deg, rgba(187,247,208,0.9) 0%, rgba(134,239,172,0.85) 100%);
+  box-shadow:inset 0 0 0 1px rgba(34,197,94,0.45);
+}
+.week-cell.week-today .gantt-week-date{
+  color:#14532d;
 }
 .gantt-table .table td,
 .gantt-table table td{
@@ -902,8 +983,8 @@ textarea{resize:vertical;color:#0b1424;background:rgba(245,244,240,0.94);}
 .btn:focus{outline:none;}
 
 /* Indicateurs de tri visibles en permanence */
-.table th[data-sort]::after{content:"\2195";font-size:11px;color:#475569;margin-left:4px;opacity:0.7;}
-.table th.sorted-asc::after{content:" ▲";color:#475569;opacity:1;}
-.table th.sorted-desc::after{content:" ▼";color:#475569;opacity:1;}
+.table th[data-sort]::after{content:" ▲▼";font-size:11px;color:#64748b;margin-left:6px;opacity:1;}
+.table th.sorted-asc::after{content:" ▲";color:#0f172a;opacity:1;}
+.table th.sorted-desc::after{content:" ▼";color:#0f172a;opacity:1;}
 
 
