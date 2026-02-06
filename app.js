@@ -20,7 +20,6 @@ const STORAGE_KEY = "suivi_chantiers_state_v1";
 const SUPABASE_URL  = "https://uioqchhbakcvemknqikh.supabase.co";
 const SUPABASE_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpb3FjaGhiYWtjdmVta25xaWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3NjA4MTUsImV4cCI6MjA4NTMzNjgxNX0.W345e_uwKLGaFcP9KAZq0kNECBUSFluh2ErgHaHeO5w";
 const SUPABASE_TABLE = "app_states";
-const SUPABASE_USERS_TABLE = "dashboard_users";
 
 // Auto-login (pour ne PAS utiliser la console)
 const SUPABASE_AUTO_EMAIL = "sebastien_duc@outlook.fr";
@@ -103,49 +102,6 @@ window.saveAppStateToSupabase = async function(stateObj){
   }
 };
 
-// ---- users (simple, sans RLS) ----
-async function saveUsersToSupabase(users){
-  const sb = _getSupabaseClient();
-  if(!sb) return false;
-  const session = await _ensureSession();
-  if(!session || !session.user) return false;
-  try{
-    const payload = {
-      user_id: session.user.id,
-      users_json: users,
-      updated_at: new Date().toISOString()
-    };
-    const { error } = await sb.from(SUPABASE_USERS_TABLE).upsert(payload, { onConflict: "user_id" });
-    if(error){ console.warn("Supabase users upsert error", error); return false; }
-    return true;
-  }catch(e){
-    console.warn("saveUsersToSupabase failed", e);
-    return false;
-  }
-}
-
-async function loadUsersFromSupabase(){
-  const sb = _getSupabaseClient();
-  if(!sb) return false;
-  const session = await _ensureSession();
-  if(!session || !session.user) return false;
-  try{
-    const { data, error } = await sb
-      .from(SUPABASE_USERS_TABLE)
-      .select("users_json, updated_at")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-    if(error){ console.warn("Supabase users select error", error); return false; }
-    if(!data || !data.users_json) return false;
-    saveUsers(data.users_json);
-    if(typeof window.populateLoginUsers === "function") window.populateLoginUsers();
-    return true;
-  }catch(e){
-    console.warn("loadUsersFromSupabase failed", e);
-    return false;
-  }
-}
-
 window.loadAppStateFromSupabase = async function(){
   const sb = _getSupabaseClient();
   if(!sb) return false;
@@ -184,7 +140,6 @@ function _scheduleSupabaseAutoLoad(){
   setTimeout(function(){
     try{
       window.loadAppStateFromSupabase();
-      loadUsersFromSupabase();
     }catch(e){}
   }, 120);
 }
@@ -209,8 +164,6 @@ let workloadRangeTypeProject = "all";
 let workloadRangeStartProject = "";
 let workloadRangeEndProject = "";
 let workloadRangeYearProject = "";
-const CONFIG_KEY = "dashboard_config_v1";
-const USERS_KEY = "dashboard_users_v1";
 let ganttColVisibility = {
   masterVendor: true,
   masterStatus: true,
@@ -262,52 +215,6 @@ const parseStatuses = (s)=> (s||"").split(",").map(x=>x.trim()).filter(Boolean);
 const deepClone = (obj)=> JSON.parse(JSON.stringify(obj));
 const siteColor = (_site="")=>"transparent";
 const attrEscape = (s="")=> s.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-function updateTopbarHeight(){
-  const tb = document.querySelector(".topbar");
-  if(!tb) return;
-  document.documentElement.style.setProperty("--topbar-h", `${tb.offsetHeight}px`);
-}
-function updateSidebarTop(){
-  const main = document.querySelector(".main");
-  if(!main) return;
-  if(typeof window.__sidebarTopLocked === "number"){
-    document.documentElement.style.setProperty("--sidebar-top", `${window.__sidebarTopLocked}px`);
-    return;
-  }
-  const anchor = main.querySelector(".panel, .card, section, div");
-  const rect = (anchor || main).getBoundingClientRect();
-  const top = Math.max(0, Math.round(rect.top));
-  document.documentElement.style.setProperty("--sidebar-top", `${top}px`);
-  if(window.scrollY === 0){
-    window.__sidebarTopLocked = top;
-  }
-}
-function applySidebarTopLock(){
-  if(typeof window.__sidebarTopLocked !== "number") return;
-  document.documentElement.style.setProperty("--sidebar-top", `${window.__sidebarTopLocked}px`);
-}
-function updateTaskDatesWarning(){
-  const warn = el("t_dates_warn");
-  const start = el("t_start")?.value;
-  const end = el("t_end")?.value;
-  if(!warn) return;
-  if(start && end && end < start){
-    warn.classList.remove("hidden");
-  }else{
-    warn.classList.add("hidden");
-  }
-}
-function formatShortDate(d){
-  const dd = String(d.getDate()).padStart(2,"0");
-  const mm = String(d.getMonth()+1).padStart(2,"0");
-  const yy = String(d.getFullYear()).slice(-2);
-  return `${dd}-${mm}-${yy}`;
-}
-function isTodayInWeek(weekStart){
-  const today = new Date();
-  const s = startOfWeek(today);
-  return +s === +weekStart;
-}
 function setToggleBtnState(id, isOn){
   const b = el(id);
   if(!b) return;
@@ -329,199 +236,6 @@ function applyGanttColumnVisibility(){
   setToggleBtnState("btnToggleMasterStatus", ganttColVisibility.masterStatus);
   setToggleBtnState("btnToggleProjectVendor", ganttColVisibility.projectVendor);
   setToggleBtnState("btnToggleProjectStatus", ganttColVisibility.projectStatus);
-}
-function openTaskFromGantt(taskId){
-  const task = state.tasks.find(x=>x.id===taskId);
-  if(!task) return;
-  navigateTo(task.projectId, taskId, true);
-}
-function closeAllOverlays(){
-  try{ showVendorDropdown(false); }catch(e){}
-  try{ showDescriptionDropdown(false); }catch(e){}
-  try{ toggleStatusMenu(false); }catch(e){}
-  const vBox = el("vendorDropdown");
-  if(vBox){ vBox.style.display="none"; vBox.classList.remove("open"); }
-  const dBox = el("descDropdown");
-  if(dBox){ dBox.style.display="none"; dBox.classList.remove("open"); }
-  const vPanel = el("vendorManagerPanel");
-  if(vPanel) vPanel.style.display="none";
-  const dPanel = el("descManagerPanel");
-  if(dPanel) dPanel.style.display="none";
-  const statusMenu = el("t_status_menu");
-  if(statusMenu) statusMenu.classList.add("hidden");
-  const overlay = el("descOverlay");
-  if(overlay) overlay.classList.remove("show");
-  document.querySelectorAll(".vendor-open").forEach(n=>n.classList.remove("vendor-open"));
-  document.querySelectorAll(".desc-open").forEach(n=>n.classList.remove("desc-open"));
-  document.querySelectorAll(".desc-panel-open").forEach(n=>n.classList.remove("desc-panel-open"));
-  floatingMap.forEach((anchor, el)=>{ closeFloating(el); });
-}
-function loadConfig(){
-  try{
-    const raw = localStorage.getItem(CONFIG_KEY);
-    return raw ? JSON.parse(raw) : {};
-  }catch(e){
-    return {};
-  }
-}
-function saveConfig(cfg){
-  try{
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg||{}));
-  }catch(e){}
-}
-function loadUsers(){
-  try{
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  }catch(e){
-    return [];
-  }
-}
-function saveUsers(list){
-  try{
-    localStorage.setItem(USERS_KEY, JSON.stringify(list||[]));
-    try{ saveUsersToSupabase(list||[]); }catch(e){}
-  }catch(e){}
-}
-function getCurrentRole(){
-  return sessionStorage.getItem("current_role") || "admin";
-}
-function updateRoleUI(){
-  const role = getCurrentRole();
-  const cfgBtn = el("btnConfig");
-  if(cfgBtn) cfgBtn.style.display = (!isLocked && role==="admin") ? "inline-flex" : "none";
-  const gear = el("gear-btn");
-  const gearWrap = gear ? gear.closest(".gear-wrap") : null;
-  if(gearWrap) gearWrap.style.display = role==="admin" ? "flex" : "none";
-  const topUser = el("topbarUser");
-  if(topUser){
-    const name = sessionStorage.getItem("current_user") || "Invité";
-    const roleLabel = role==="admin" ? "Admin" : "Utilisateur";
-    topUser.textContent = `${name} — ${roleLabel}`;
-  }
-}
-async function hashPassword(str){
-  const enc = new TextEncoder().encode(str || "");
-  const buf = await crypto.subtle.digest("SHA-256", enc);
-  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
-}
-function renderUsersList(){
-  const list = el("cfg_users_list");
-  if(!list) return;
-  const users = loadUsers();
-  if(users.length===0){
-    list.innerHTML = `<div class="config-user-meta">Aucun utilisateur</div>`;
-    return;
-  }
-  list.innerHTML = users.map(u=>`
-    <div class="config-user-item">
-      <div>
-        <div><strong>${attrEscape(u.name||"")}</strong></div>
-        <div class="config-user-meta">${attrEscape(u.email||"") || "—"} · ${u.role==="admin" ? "Admin" : "Utilisateur"}</div>
-      </div>
-      <div class="config-user-actions">
-        <button class="btn btn-ghost cfg-user-edit" data-user="${attrEscape(u.name)}">Modifier</button>
-        <button class="btn btn-ghost cfg-user-pass" data-user="${attrEscape(u.name)}">Changer mdp</button>
-        <button class="btn btn-danger cfg-user-del" data-user="${attrEscape(u.name)}">Supprimer</button>
-      </div>
-    </div>
-  `).join("");
-  list.querySelectorAll(".cfg-user-pass").forEach(btn=>{
-    btn.onclick = async ()=>{
-      const name = btn.dataset.user;
-      const next = prompt(`Nouveau mot de passe pour ${name} :`);
-      if(!next) return;
-      const users = loadUsers();
-      const h = await hashPassword(next);
-      users.forEach(u=>{ if(u.name===name) u.hash = h; });
-      saveUsers(users);
-      renderUsersList();
-    };
-  });
-  list.querySelectorAll(".cfg-user-edit").forEach(btn=>{
-    btn.onclick = ()=>{
-      const name = btn.dataset.user;
-      const users = loadUsers();
-      const idx = users.findIndex(u=>u.name===name);
-      if(idx<0) return;
-      const newName = prompt("Nom d'utilisateur :", users[idx].name) || "";
-      if(!newName) return;
-      const newEmail = prompt("Email :", users[idx].email||"") || "";
-      const newRole = (prompt("Rôle (admin/user) :", users[idx].role||"user") || users[idx].role || "user").toLowerCase();
-      const role = newRole === "admin" ? "admin" : "user";
-      if(users.some((u,i)=> i!==idx && u.name.toLowerCase()===newName.toLowerCase())){
-        alert("Nom déjà utilisé."); return;
-      }
-      if(newEmail && users.some((u,i)=> i!==idx && (u.email||"").toLowerCase()===newEmail.toLowerCase())){
-        alert("Email déjà utilisé."); return;
-      }
-      users[idx].name = newName;
-      users[idx].email = newEmail;
-      users[idx].role = role;
-      saveUsers(users);
-      const current = sessionStorage.getItem("current_user") || "";
-      if(current && current === name){
-        sessionStorage.setItem("current_user", newName);
-        sessionStorage.setItem("current_role", role);
-        updateRoleUI();
-      }
-      renderUsersList();
-    };
-  });
-  list.querySelectorAll(".cfg-user-del").forEach(btn=>{
-    btn.onclick = ()=>{
-      const name = btn.dataset.user;
-      if(!confirm(`Supprimer ${name} ?`)) return;
-      let users = loadUsers();
-      const admins = users.filter(u=>u.role==="admin");
-      if(admins.length<=1 && admins.some(u=>u.name===name)){
-        alert("Impossible de supprimer le dernier admin.");
-        return;
-      }
-      users = users.filter(u=>u.name!==name);
-      saveUsers(users);
-      renderUsersList();
-    };
-  });
-}
-function openConfigModal(){
-  const modal = el("configModal");
-  if(!modal) return;
-  const cfg = loadConfig();
-  el("cfg_name").value = cfg.name || "";
-  el("cfg_http").value = cfg.http || "";
-  el("cfg_front").value = cfg.front || "";
-  el("cfg_back").value = cfg.back || "";
-  const role = getCurrentRole();
-  const usersSection = el("cfg_users_section");
-  if(usersSection) usersSection.style.display = role==="admin" ? "block" : "none";
-  if(role==="admin") renderUsersList();
-  modal.classList.remove("hidden");
-  modal.style.display = "flex";
-  modal.setAttribute("aria-hidden","false");
-}
-function closeConfigModal(){
-  const modal = el("configModal");
-  if(!modal) return;
-  modal.classList.add("hidden");
-  modal.style.display = "none";
-  modal.setAttribute("aria-hidden","true");
-}
-function navigateTo(projectId=null, taskId=null, push=true){
-  selectedProjectId = projectId || null;
-  selectedTaskId = taskId || null;
-  if(push){
-    try{
-      history.pushState({projectId:selectedProjectId, taskId:selectedTaskId}, "");
-    }catch(e){}
-  }
-  closeAllOverlays();
-  setTimeout(()=> closeAllOverlays(), 0);
-  renderAll();
-}
-function selectTaskInProject(taskId){
-  selectedTaskId = taskId || null;
-  renderProject();
 }
 const FLOAT_Z = 1000000;
 const floatingMap = new Map();
@@ -1285,29 +999,6 @@ function setLockState(flag){
     if(isLocked) n.setAttribute("disabled","disabled");
     else n.removeAttribute("disabled");
   });
-  const cfgBtn = el("btnConfig");
-  if(cfgBtn){
-    cfgBtn.style.display = (!isLocked && getCurrentRole()==="admin") ? "inline-flex" : "none";
-  }
-  updateRoleUI();
-  if(isLocked){
-    closeConfigModal();
-  }
-  // état du verrou + boutons autoriser/interdire
-  const lockLabel = el("topbarLock");
-  if(lockLabel){
-    lockLabel.textContent = isLocked ? "Verrou : Interdit" : "Verrou : Autorisé";
-  }
-  const allowBtn = el("btn_allow_lock");
-  const forbidBtn = el("btn_forbid_lock");
-  if(allowBtn){
-    allowBtn.disabled = !isLocked;
-    allowBtn.classList.toggle("is-disabled", !isLocked);
-  }
-  if(forbidBtn){
-    forbidBtn.disabled = isLocked;
-    forbidBtn.classList.toggle("is-disabled", isLocked);
-  }
   // gestion prestataires : désactiver + masquer panels/dropdown
   const manageBtn = el("btnManageVendors");
   if(manageBtn){
@@ -1632,9 +1323,7 @@ function renderGantt(projectId){
     const wEnd=endOfWorkWeek(w);
     const range=`${w.toLocaleDateString("fr-FR",{day:"2-digit"})}-${wEnd.toLocaleDateString("fr-FR",{day:"2-digit"})}/${wEnd.toLocaleDateString("fr-FR",{month:"2-digit",year:"2-digit"})}`;
     const weekLabel = `S${String(info.week).padStart(2,"0")}`;
-    const mondayLabel = formatShortDate(w);
-    const todayClass = isTodayInWeek(w) ? " week-today" : "";
-    html+=`<th class="week-cell${todayClass}" data-range="${range}" style='width:72px;color:#111827'>${weekLabel}<div class="gantt-week-date">${mondayLabel}</div></th>`;
+    html+=`<th class="week-cell" data-range="${range}" style='width:72px;color:#111827'>${weekLabel}</th>`;
   });
   html+="</tr></thead><tbody>";
 
@@ -1653,7 +1342,7 @@ function renderGantt(projectId){
         .map(v=>vendorBadge(v)).join(" ");
     })();
 
-    html+=`<tr data-task="${t.id}" onclick="openTaskFromGantt('${t.id}')">`;
+    html+=`<tr data-task="${t.id}">`;
     const p = state?.projects?.find(x=>x.id===t.projectId);
     const sub = (p?.subproject || "").trim();
     const taskDesc = (t.roomNumber || "").trim();
@@ -1690,19 +1379,6 @@ function renderGantt(projectId){
       renderProject();
     };
   });
-  wrap.querySelectorAll("tbody tr[data-task] td")?.forEach(td=>{
-    td.onclick=(e)=>{
-      if(e.target && e.target.closest(".bar-click")) return;
-      const row = e.currentTarget?.parentElement;
-      if(!row || !row.dataset.task) return;
-      const taskId = row.dataset.task;
-      const task = state.tasks.find(x=>x.id===taskId);
-      if(!task) return;
-      selectedProjectId = task.projectId;
-      selectedTaskId = taskId;
-      renderProject();
-    };
-  });
 }
 
 function renderProjectTasks(projectId){
@@ -1732,7 +1408,8 @@ function renderProjectTasks(projectId){
   tbody.querySelectorAll("tr").forEach(row=>{
     row.onclick=()=>{
       if(!row.dataset.task) return;
-      selectTaskInProject(row.dataset.task);
+      selectedTaskId=row.dataset.task;
+      renderProject();
     };
   });
   updateSortIndicators("projectTasksTable", sortProject);
@@ -1772,9 +1449,7 @@ function renderMasterGantt(){
     const wEnd=endOfWorkWeek(w);
     const range=`${w.toLocaleDateString("fr-FR",{day:"2-digit"})}-${wEnd.toLocaleDateString("fr-FR",{day:"2-digit"})}/${wEnd.toLocaleDateString("fr-FR",{month:"2-digit",year:"2-digit"})}`;
     const weekLabel = `S${String(info.week).padStart(2,"0")}`;
-    const mondayLabel = formatShortDate(w);
-    const todayClass = isTodayInWeek(w) ? " week-today" : "";
-    html+=`<th class="week-cell${todayClass}" data-range="${range}" style='width:72px;color:#111827'>${weekLabel}<div class="gantt-week-date">${mondayLabel}</div></th>`;
+    html+=`<th class="week-cell" data-range="${range}" style='width:72px;color:#111827'>${weekLabel}</th>`;
   });
   html+="</tr></thead><tbody>";
 
@@ -1793,7 +1468,7 @@ function renderMasterGantt(){
         .map(v=>vendorBadge(v)).join(" ");
     })();
 
-    html+=`<tr data-task="${t.id}" onclick="openTaskFromGantt('${t.id}')">`;
+    html+=`<tr data-task="${t.id}">`;
     html+=`<td class="gantt-col-task"><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span> <span class="gantt-task-name">${attrEscape(projectName)}</span></td>`;
     html+=`<td class="gantt-vendor-cell gantt-col-vendor"><div class="vendor-stack">${vendorBadges}</div></td>`;
     html+=`<td class="gantt-status-cell gantt-col-status"><div class="gantt-status-stack"><div class="status-row"><span>${statusLabels(mainStatus)}</span></div></div></td>`;
@@ -1817,12 +1492,13 @@ function renderMasterGantt(){
   wrap.innerHTML=html;
   applyGanttColumnVisibility();
   wrap.querySelectorAll(".bar-click")?.forEach(bar=>{
-    bar.onclick=(e)=>{
-      if(e && e.stopPropagation) e.stopPropagation();
+    bar.onclick=()=>{
       const taskId = bar.dataset.task;
       const task = state.tasks.find(x=>x.id===taskId);
       if(!task) return;
-      openTaskFromGantt(taskId);
+      selectedProjectId = task.projectId;
+      selectedTaskId = taskId;
+      renderProject();
     };
   });
 }
@@ -2210,8 +1886,8 @@ function renderTabs(){
   tabs.querySelectorAll("button").forEach(btn=>{
     btn.onclick=()=>{
       const tab=btn.dataset.tab;
-      if(tab==="MASTER"){ navigateTo(null, null, true); }
-      else { navigateTo(tab, null, true); }
+      if(tab==="MASTER"){ selectedProjectId=null; selectedTaskId=null; renderAll(); }
+      else { selectedProjectId=tab; selectedTaskId=null; renderProject(); }
     };
   });
   tabs.querySelectorAll(".tab-close").forEach(close=>{
@@ -2365,7 +2041,6 @@ function filtersActive(){
 function renderMaster(){
   computeTaskOrderMap();
   renderTabs();
-  closeAllOverlays();
   el("viewMaster")?.classList.remove("hidden");
   el("viewProject")?.classList.add("hidden");
   const tbody = el("masterTable")?.querySelector("tbody");
@@ -2434,7 +2109,6 @@ function renderMaster(){
 function renderProject(){
   computeTaskOrderMap();
   renderTabs();
-  closeAllOverlays();
   const p=state.projects.find(x=>x.id===selectedProjectId);
   if(!p){ selectedProjectId=null; renderMaster(); return; }
   el("viewMaster")?.classList.add("hidden");
@@ -2558,7 +2232,6 @@ function renderAll(){
   if(!state || !Array.isArray(state.projects) || state.projects.length===0){
     state = defaultState();
   }
-  closeAllOverlays();
   refreshVendorsList();
   refreshDescriptionsList();
   // réinitialiser les filtres visibles pour éviter un filtrage bloquant
@@ -2570,8 +2243,6 @@ function renderAll(){
   renderTabs();
   if(selectedProjectId) renderProject();
   else renderMaster();
-  updateSidebarTop();
-  applySidebarTopLock();
 }
 
 function bind(){
@@ -2583,58 +2254,9 @@ function bind(){
     if(wrap && !wrap.contains(e.target)){ toggleStatusMenu(false); }
   });
 
-  updateTopbarHeight();
-  updateSidebarTop();
-  applySidebarTopLock();
-  setLockState(isLocked);
-  window.addEventListener("resize", ()=>{
-    updateTopbarHeight();
-    updateSidebarTop();
-    applySidebarTopLock();
-  });
-  el("btnConfig")?.addEventListener("click", ()=>{
-    if(isLocked) return;
-    openConfigModal();
-  });
-  el("btnConfigSave")?.addEventListener("click", ()=>{
-    const cfg = {
-      name: el("cfg_name")?.value || "",
-      http: el("cfg_http")?.value || "",
-      front: el("cfg_front")?.value || "",
-      back: el("cfg_back")?.value || ""
-    };
-    saveConfig(cfg);
-    closeConfigModal();
-  });
-  el("btnUserAdd")?.addEventListener("click", async ()=>{
-    const name = (el("cfg_user_name")?.value || "").trim();
-    const email = (el("cfg_user_email")?.value || "").trim();
-    const role = el("cfg_user_role")?.value || "user";
-    const pass = el("cfg_user_pass")?.value || "";
-    if(!name || !pass){ alert("Nom et mot de passe requis."); return; }
-    const users = loadUsers();
-    if(users.some(u=>u.name.toLowerCase()===name.toLowerCase())){
-      alert("Utilisateur déjà existant."); return;
-    }
-    if(email && users.some(u=>(u.email||"").toLowerCase()===email.toLowerCase())){
-      alert("Email déjà existant."); return;
-    }
-    const hash = await hashPassword(pass);
-    users.push({name, email, role, hash});
-    saveUsers(users);
-    el("cfg_user_name").value = "";
-    el("cfg_user_email").value = "";
-    el("cfg_user_pass").value = "";
-    renderUsersList();
-  });
-  el("btnConfigClose")?.addEventListener("click", ()=> closeConfigModal());
-  el("configModal")?.addEventListener("click",(e)=>{
-    if(e.target && e.target.id==="configModal") closeConfigModal();
-  });
   el("btnSave")?.addEventListener("click", ()=>{
     if(isLocked) return;
     saveState();
-    try{ saveUsersToSupabase(loadUsers()); }catch(e){}
     // Flux simple : téléchargement d'un JSON à écraser manuellement dans le dossier projet.
     downloadBackup();
     flashSaved();
@@ -2836,7 +2458,6 @@ function bind(){
       el("t_end").value = formatDate(t.start);
       console.warn("Date de fin ajustée à la date de début pour éviter une fin antérieure.");
     }
-    updateTaskDatesWarning();
     t.status     = Array.from(selectedStatusSet).join(",");
     markDirty();
     renderProject();
@@ -2889,7 +2510,6 @@ function bind(){
               endNode.value = startVal;
             }
           }
-          updateTaskDatesWarning();
         }
       });
     }
@@ -2897,11 +2517,9 @@ function bind(){
       fpEnd = window.flatpickr(endNode, {...fpOpts,
         defaultDate: endIso || startIso || todayIso,
         minDate: startIso || null,
-        onOpen: (_s,_d,inst)=>{ const target = startIso || endIso || todayIso; inst.jumpToDate(target); },
-        onChange:()=>{ updateTaskDatesWarning(); }
+        onOpen: (_s,_d,inst)=>{ const target = startIso || endIso || todayIso; inst.jumpToDate(target); }
       });
     }
-    updateTaskDatesWarning();
     ["filterStartAfter","filterEndBefore"].forEach(id=>{
       const node=el(id);
       if(node) window.flatpickr(node, fpOpts);
@@ -2962,7 +2580,9 @@ function bind(){
   el("masterTable")?.addEventListener("click",(e)=>{
     const row=e.target.closest("tr[data-project]");
     if(!row) return;
-    navigateTo(row.dataset.project, row.dataset.task, true);
+    selectedProjectId=row.dataset.project;
+    selectedTaskId=row.dataset.task;
+    renderProject();
   });
   el("masterTable")?.querySelectorAll("thead th[data-sort]")?.forEach(th=>{
     th.addEventListener("click", ()=>{
@@ -3019,17 +2639,6 @@ function bind(){
 
 load();
 bind();
-try{
-  history.replaceState({projectId:selectedProjectId, taskId:selectedTaskId}, "");
-}catch(e){}
-window.addEventListener("popstate",(e)=>{
-  const st = e.state || {};
-  selectedProjectId = st.projectId || null;
-  selectedTaskId = st.taskId || null;
-  closeAllOverlays();
-  setTimeout(()=> closeAllOverlays(), 0);
-  renderAll();
-});
 renderAll();
 
 // Préparation impression : cartouche + légende
