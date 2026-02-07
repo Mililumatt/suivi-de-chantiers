@@ -45,7 +45,7 @@
     .lock-card{
       background:#fff; padding:18px 20px; border-radius:14px;
       box-shadow:0 18px 36px rgba(0,0,0,0.24);
-      width:300px; text-align:center; font-family:var(--sans);
+      width:360px; text-align:center; font-family:var(--sans);
     }
     .lock-title{font-weight:800;font-size:17px;margin-bottom:6px;color:#0f172a;}
     .lock-input{width:100%;padding:9px 10px;border-radius:10px;border:1px solid #d1d5db;font-size:13px;margin:8px 0;}
@@ -90,8 +90,20 @@
   <div id="lockscreen">
     <div class="lock-card">
       <div class="lock-title">Accès restreint</div>
-      <input id="lock-pwd" class="lock-input" type="password" placeholder="Mot de passe" />
-      <button id="lock-submit" class="lock-btn">Entrer</button>
+      <form id="lock-form" autocomplete="on" method="post" action="#">
+        <input id="lock-email" class="lock-input" type="email" name="email" placeholder="Email" autocomplete="off" inputmode="email" spellcheck="false" autocapitalize="none" autocorrect="off" list="lock-users" required />
+        <datalist id="lock-users"></datalist>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input id="lock-pwd" class="lock-input" type="password" placeholder="Mot de passe" autocomplete="current-password" name="password" required />
+          <button id="lock-pwd-toggle" type="button" title="Afficher / masquer" style="border:1px solid #d1d5db;background:#fff;border-radius:10px;padding:6px 10px;cursor:pointer;"></button>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;justify-content:flex-start;font-size:12px;color:#475569;margin:4px 0 2px;">
+          <input id="lock-remember" type="checkbox" style="width:auto;margin:0;" />
+          Se souvenir de moi (local)
+        </label>
+        <div style="font-size:11px;color:#b91c1c;margin:0 0 8px;">Mot de passe mémorisé en clair dans ce navigateur.</div>
+        <button id="lock-submit" class="lock-btn" type="submit">Entrer</button>
+      </form>
       <div class="lock-msg">Mot de passe requis (local, non sécurisé)</div>
     </div>
   </div>
@@ -100,6 +112,7 @@
     <div class="modal-card">
       <div class="modal-title">Export PDF du projet</div>
       <div class="modal-sub">Choisis le mode d’export :</div>
+      <div id="exportProjectSummary" class="modal-sub"></div>
       <div class="modal-actions">
         <button class="btn btn-export-no" id="btnExportNoCharts">Export sans graphiques</button>
         <button class="btn btn-export-yes" id="btnExportWithCharts">Export avec graphiques</button>
@@ -110,9 +123,45 @@
     <div class="modal-card">
       <div class="modal-title">Export PDF du tableau maître</div>
       <div class="modal-sub">Choisis le mode d’export :</div>
+      <div id="exportMasterSummary" class="modal-sub"></div>
       <div class="modal-actions">
         <button class="btn btn-export-no" id="btnExportMasterNoCharts">Export sans graphiques</button>
         <button class="btn btn-export-yes" id="btnExportMasterWithCharts">Export avec graphiques</button>
+      </div>
+    </div>
+  </div>
+  <div id="configModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card" style="min-width:340px;">
+      <div class="modal-title">Configuration</div>
+      <div class="modal-sub">Paramètres du dashboard</div>
+      <label class="label">Nom du dashboard</label>
+      <input class="input" id="cfg_name" placeholder="Nom du dashboard" />
+      <label class="label">Adresse HTTP</label>
+      <input class="input" id="cfg_http" placeholder="https://..." />
+      <label class="label">URL Front (GitHub)</label>
+      <input class="input" id="cfg_front" placeholder="https://github.com/..." />
+      <label class="label">URL Back (Supabase)</label>
+      <input class="input" id="cfg_back" placeholder="https://..." />
+      <div id="cfg_users_section" class="config-users">
+        <div class="config-users-title">Utilisateurs / Administrateurs</div>
+        <div class="config-users-row">
+          <input class="input" id="cfg_user_name" placeholder="Nom d'utilisateur" />
+          <input class="input" id="cfg_user_email" placeholder="Email" />
+          <select class="input" id="cfg_user_role">
+            <option value="admin">Admin</option>
+            <option value="user">Utilisateur</option>
+          </select>
+        </div>
+        <div class="config-users-row">
+          <input class="input" id="cfg_user_pass" type="password" placeholder="Mot de passe" />
+          <button class="btn btn-primary" id="btnUserAdd">Ajouter</button>
+        </div>
+        <div id="cfg_users_list" class="config-users-list"></div>
+      </div>
+      <div class="config-footer">Concepteur : Sébastien DUC <span class="config-copyright">©</span></div>
+      <div class="modal-actions" style="margin-top:10px;">
+        <button class="btn btn-ghost" id="btnConfigClose">Fermer</button>
+        <button class="btn btn-primary" id="btnConfigSave">Enregistrer</button>
       </div>
     </div>
   </div>
@@ -121,11 +170,17 @@
       <div class="brand" id="brandTitle">Suivi de Chantiers</div>
       <div class="subtitle" id="brandSub">Tableau maître • Projets • Gantt • Exports locaux</div>
     </div>
+    <div class="topbar-user" id="topbarUser"></div>
+    <button class="btn btn-ghost" id="btnSwitchUser" style="display:none;">
+      <span class="btn-icon">🔄</span>
+      Changer d'utilisateur
+    </button>
+    <div class="topbar-lock" id="topbarLock"></div>
     <div class="actions">
-      <button class="btn" id="btnExport">Export CSV</button>
-      <button class="btn btn-primary" id="btnSave">💾 Sauvegarder</button>
+      <button class="btn btn-primary" id="btnSave">Sauvegarder</button>
+      <button class="btn" id="btnConfig" style="display:none;">Configuration</button>
       <div class="gear-wrap">
-        <button id="gear-btn" title="Options accès">⚙️</button>
+        <button id="gear-btn" title="Options accès">🔒</button>
         <div id="gear-panel">
           <small>Autoriser = déverrouiller. Interdire = verrouiller.</small>
           <div class="gear-actions">
@@ -146,12 +201,12 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="section">
-        <div class="section-title"><span class="section-title-icon">🗂️</span> Onglets</div>
+        <div class="section-title"><span class="section-title-icon">️</span> Onglets</div>
         <div id="tabs" class="tabs"></div>
       </div>
 
       <div class="section">
-        <div class="section-title"><span class="section-title-icon">🔎</span> Filtres (tableau maître)</div>
+        <div class="section-title"><span class="section-title-icon"></span> Filtres (tableau maître)</div>
         <label class="label">Projet</label>
         <select class="input" id="filterProject"></select>
 
@@ -177,7 +232,7 @@
       </div>
 
       <div class="section">
-        <div class="section-title"><span class="section-title-icon">➕</span> Ajouter</div>
+        <div class="section-title"><span class="section-title-icon"></span> Ajouter</div>
         <button class="btn btn-primary" id="btnAddProject">+ Nouveau projet</button>
         <button class="btn btn-primary" id="btnAddTask">+ Nouvelle tâche</button>
       </div>
@@ -187,13 +242,16 @@
       <section class="panel" id="viewMaster">
         <div class="panel-head">
           <div>
-            <div class="panel-title"><span class="panel-title-icon">📊</span> Tableau maître</div>
+            <div class="panel-title"><span class="panel-title-icon"></span> Tableau maître</div>
             <div class="panel-sub">Toutes les tâches • clic = édition</div>
             <div class="panel-metrics" id="masterMetrics"></div>
             <div class="panel-live" id="masterLive"></div>
           </div>
           <div class="row" style="align-items:center;gap:8px;">
-            <button class="btn" id="btnExportMaster" onclick="openExportMasterModal()">Export PDF</button>
+            <button class="btn" id="btnExportMaster" onclick="openExportMasterModal()">
+              <span class="pdf-icon" aria-hidden="true"></span>
+              Export PDF
+            </button>
           </div>
         </div>
         <div id="kpis" class="kpis"></div>
@@ -241,7 +299,10 @@
               <select class="input" id="workloadRangeYear" style="width:110px;"></select>
               <input class="input" id="workloadRangeStart" type="date" style="width:140px;" />
               <input class="input" id="workloadRangeEnd" type="date" style="width:140px;" />
-              <button class="btn" id="btnExportWorkload">Export PDF</button>
+              <button class="btn" id="btnExportWorkload">
+                <span class="pdf-icon" aria-hidden="true"></span>
+                Export PDF
+              </button>
             </div>
           </div>
           <div id="workloadChartWrap" style="overflow:auto;">
@@ -259,26 +320,26 @@
       <section class="panel hidden" id="viewProject">
         <div class="panel-head">
           <div>
-            <div class="panel-title" id="projectTitle"><span class="panel-title-icon">🏗️</span> Projet</div>
-            <div class="panel-sub" id="projectSub">Détails • Gantt</div>
+            <div class="panel-title" id="projectTitle"><span class="panel-title-icon">️</span> Projet</div>
+            <div class="panel-sub" id="projectSub">Détails  Gantt</div>
             <div class="panel-metrics" id="projectMetrics"></div>
             <div class="panel-live" id="projectLive"></div>
           </div>
           <div class="row">
-            <button class="btn btn-ghost" id="btnBack">← Retour</button>
+            <button class="btn btn-ghost" id="btnBack"> Retour</button>
             <button class="btn" id="btnProjectExport" onclick="openExportProjectModal()">Export projet</button>
           </div>
         </div>
 
         <div class="grid2">
           <div class="card">
-            <div class="card-title"><span class="card-title-icon">📝</span> Infos projet</div>
+            <div class="card-title"><span class="card-title-icon"></span> Infos projet</div>
             <label class="label">Nom</label>
             <input class="input" id="p_name" />
             <label class="label">Sous-projet</label>
-            <input class="input" id="p_subproject" placeholder="ex: Phase 1, Bâtiment B, Étages 2-3" />
+            <input class="input" id="p_subproject" placeholder="ex: Phase 1, Bâtiment B, tages 2-3" />
             <label class="label">Site / Zone</label>
-            <input class="input" id="p_site" />
+            <select class="input" id="p_site"></select>
             <label class="label">Contraintes clés</label>
             <input class="input" id="p_constraints" />
               <!-- Dates de contraintes retirées -->
@@ -289,33 +350,33 @@
           </div>
 
           <div class="card">
-            <div class="card-title"><span class="card-title-icon">🛠️</span> Édition tâche <span class="num-badge" id="t_num_badge" style="margin-left:8px; display:none;"></span></div>
+            <div class="card-title"><span class="card-title-icon">️</span> Édition tâche <span class="num-badge" id="t_num_badge" style="margin-left:8px; display:none;"></span></div>
             <div id="descOverlay" class="desc-overlay"></div>
             <label class="label">Description</label>
             <div class="desc-wrap">
               <input class="input" id="t_room" placeholder="ex: Chambre 11, Local élec, Couloir A" autocomplete="off" aria-label="Description" />
-              <button type="button" class="btn icon-btn desc-manage-btn" id="btnManageDescriptions" aria-label="Gérer les descriptions">⚙️</button>
+              <button type="button" class="btn icon-btn desc-manage-btn" id="btnManageDescriptions" aria-label="Gérer les descriptions">️</button>
               <div id="descDropdown" class="desc-dropdown" role="listbox" aria-label="Suggestions description" style="display:none"></div>
               <div id="descManagerPanel" class="vendor-panel" style="display:none"></div>
             </div>
 
             <label class="label">Statuts / Corps d'état (multi-sélection)</label>
             <div class="multiselect" id="t_status_wrap">
-              <div class="multiselect-display" id="t_status_display">Sélectionner…</div>
+              <div class="multiselect-display" id="t_status_display">Sélectionner</div>
               <div class="multiselect-menu hidden" id="t_status_menu"></div>
             </div>
 
             <label class="label">Intervenants (équipe interne / prestataire externe)</label>
             <select class="input" id="t_owner">
-              <option value="">— Choisir —</option>
-              <option value="Équipe interne">Équipe interne</option>
+              <option value=""> Choisir </option>
+              <option value="quipe interne">quipe interne</option>
               <option value="Prestataire externe">Prestataire externe</option>
             </select>
 
             <label class="label">Prestataire externe</label>
             <div class="vendor-wrap">
-              <input class="input" id="t_vendor" placeholder="Nom du prestataire (trié A→Z)" autocomplete="off" aria-label="Prestataire externe" />
-              <button type="button" class="btn icon-btn vendor-manage-btn" id="btnManageVendors" aria-label="Gérer les prestataires">⚙️</button>
+              <input class="input" id="t_vendor" placeholder="Nom du prestataire (trié AZ)" autocomplete="off" aria-label="Prestataire externe" />
+              <button type="button" class="btn icon-btn vendor-manage-btn" id="btnManageVendors" aria-label="Gérer les prestataires">️</button>
               <div id="vendorDropdown" class="vendor-dropdown" role="listbox" aria-label="Suggestions prestataire" style="display:none"></div>
               <div id="vendorManagerPanel" class="vendor-panel" style="display:none"></div>
             </div>
@@ -329,6 +390,7 @@
                 <label class="label">Fin</label>
                 <input class="input" id="t_end" type="date" placeholder="jj/mm/aaaa" />
               </div>
+              <div id="t_dates_warn" class="date-warn hidden">La date de fin est avant la date de début.</div>
             </div>
 
             <div class="row">
@@ -340,7 +402,7 @@
         </div>
 
         <div class="card">
-          <div class="card-title"><span class="card-title-icon">📋</span> Tâches du projet</div>
+          <div class="card-title"><span class="card-title-icon"></span> Tâches du projet</div>
           <div class="panel-controls">
             <span class="filters-indicator" id="projectFiltersBadge">Tri/filtre actif</span>
             <button class="btn btn-ghost" id="btnResetSortProject">Réinitialiser tri</button>
@@ -363,7 +425,7 @@
         </div>
 
         <div class="card">
-          <div class="card-title"><span class="card-title-icon">📅</span> Gantt hebdo</div>
+          <div class="card-title"><span class="card-title-icon"></span> Gantt hebdo</div>
           <div id="legend" class="legend"></div>
           <div class="gantt-toggle-row">
             <button class="btn btn-ghost" id="btnToggleProjectVendor">Prestataire</button>
@@ -385,7 +447,10 @@
               <select class="input" id="workloadRangeYearProject" style="width:110px;"></select>
               <input class="input" id="workloadRangeStartProject" type="date" style="width:140px;" />
               <input class="input" id="workloadRangeEndProject" type="date" style="width:140px;" />
-              <button class="btn" id="btnExportWorkloadProject">Export PDF</button>
+              <button class="btn" id="btnExportWorkloadProject">
+                <span class="pdf-icon" aria-hidden="true"></span>
+                Export PDF
+              </button>
             </div>
           </div>
           <div id="workloadChartProjectWrap" style="overflow:auto;">
@@ -408,13 +473,19 @@
 <!-- SUPABASE CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- TON APP -->
-<script src="app.js?v=20260205_27"></script>
+<script src="app.js?v=20260205_89"></script>
 <script>
 // Pseudo-login (dissuasif uniquement)
 (function(){
   const HASH = "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; // SHA-256 du mot de passe "admin"
+  const USERS_KEY = "dashboard_users_v1";
   const lock = document.getElementById("lockscreen");
+  const userInput = document.getElementById("lock-email");
+  const userList = document.getElementById("lock-users");
+  const form = document.getElementById("lock-form");
   const pwd  = document.getElementById("lock-pwd");
+  const pwdToggle = document.getElementById("lock-pwd-toggle");
+  const remember = document.getElementById("lock-remember");
   const btn  = document.getElementById("lock-submit");
   const gear = document.getElementById("gear-btn");
   const panel= document.getElementById("gear-panel");
@@ -428,24 +499,97 @@
       return "sha256:"+hex;
     });
   }
-  async function tryUnlock(){
-    const h = await hash(pwd.value||"");
-    if(h===HASH){
+  const REMEMBER_KEY = "remember_login_plain_v1";
+  function loadUsers(){
+    try{
+      const raw = localStorage.getItem(USERS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function rememberSave(email, pass){
+    try{ localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, pass })); }catch(e){}
+  }
+  function rememberClear(){
+    try{ localStorage.removeItem(REMEMBER_KEY); }catch(e){}
+  }
+  function populateUsers(){
+    const users = loadUsers();
+    if(!userList) return;
+    const seen = new Set();
+    const items = [];
+    users.forEach(u=>{
+      const email = (u.email||"").trim().toLowerCase();
+      if(!email || seen.has(email)) return;
+      seen.add(email);
+      const label = `${u.name||""} (${email||"sans email"})`;
+      items.push(`<option value="${email}" label="${label}"></option>`);
+    });
+    userList.innerHTML = items.join("");
+    const last = localStorage.getItem("last_login_email") || "";
+    if(last && userInput){
+      userInput.value = last.toLowerCase();
+    }
+  }
+  window.populateLoginUsers = populateUsers;
+  function ensureDefaultAdmin(){
+    const users = loadUsers();
+    if(users.length===0){
+      localStorage.setItem(USERS_KEY, JSON.stringify([{name:"Admin", email:"admin@local", role:"admin", hash:HASH.replace("sha256:","")}]));
+    }
+  }
+  async function tryUnlockWithHash(h, mail){
+    const users = loadUsers();
+    const u = users.find(x=>`sha256:${x.hash}`===h && (x.email||"").toLowerCase()===mail);
+    if(u){
       sessionStorage.setItem("unlocked","1");
+      sessionStorage.setItem("current_user", u.name||"");
+      sessionStorage.setItem("current_role", u.role||"user");
+      localStorage.setItem("last_login_email", mail);
       lock.classList.add("hidden");
+      if(window.setLockState) window.setLockState(u.role === "admin" ? false : true);
+      return u;
+    }
+    return null;
+  }
+  async function tryUnlock(){
+    ensureDefaultAdmin();
+    populateUsers();
+    const h = await hash(pwd.value||"");
+    const mail = (userInput?.value||"").trim().toLowerCase();
+    if(!mail){ alert("Email requis"); return; }
+    const u = await tryUnlockWithHash(h, mail);
+    if(u){
+      if(remember?.checked){
+        rememberSave(mail, pwd.value||"");
+      }else{
+        rememberClear();
+      }
+      return true;
     }else{
       alert("Mot de passe incorrect");
+      return false;
     }
   }
   // gear toggle
-  gear.onclick = ()=> panel.classList.toggle("show");
+  gear.onclick = (e)=>{ e.stopPropagation(); panel.classList.toggle("show"); };
+  document.addEventListener("click", (e)=>{
+    if(!panel.classList.contains("show")) return;
+    if(panel.contains(e.target) || gear.contains(e.target)) return;
+    panel.classList.remove("show");
+  });
   allowBtn.onclick = async ()=>{
-    const pass = prompt("Mot de passe pour autoriser ?");
+    const mail = prompt("Email admin pour autoriser ?");
+    if(!mail) return;
+    const pass = prompt("Mot de passe admin ?");
     if(!pass) return;
     const h = await hash(pass);
-    if(h===HASH){
-      localStorage.setItem("lock_disabled","1");
+    ensureDefaultAdmin();
+    const users = loadUsers();
+    const u = users.find(x=>`sha256:${x.hash}`===h && x.role==="admin" && (x.email||"").toLowerCase()===mail.toLowerCase());
+    if(u){
       sessionStorage.setItem("unlocked","1");
+      sessionStorage.setItem("current_user", u.name||"");
+      sessionStorage.setItem("current_role", u.role||"admin");
       lock.classList.add("hidden");
       if(window.setLockState) window.setLockState(false);
     }else{
@@ -454,25 +598,69 @@
     panel.classList.remove("show");
   };
   forbidBtn.onclick = ()=>{
-    localStorage.removeItem("lock_disabled");
     sessionStorage.removeItem("unlocked");
+    sessionStorage.removeItem("current_user");
+    sessionStorage.removeItem("current_role");
+    rememberClear();
     panel.classList.remove("show");
-    pwd.value="";
-    lock.classList.remove("hidden"); // réaffiche immédiatement
+    if(pwd) pwd.value = "";
+    lock.classList.remove("hidden"); // raffiche immdiatement
     if(window.setLockState) window.setLockState(true);
   };
-  btn.onclick = tryUnlock;
-  pwd.onkeydown = (e)=>{ if(e.key==="Enter") tryUnlock(); };
-
-  // auto-unlock si bypass activé ou session déjà validée
-  const disabled = localStorage.getItem("lock_disabled")==="1";
-  const unlocked = sessionStorage.getItem("unlocked")==="1";
-  if(disabled || unlocked){
-    lock.classList.add("hidden");
-    if(window.setLockState) window.setLockState(false);
-  }else{
-    if(window.setLockState) window.setLockState(true);
+  btn.onclick = (e)=>{ e.preventDefault(); tryUnlock(); };
+  if(form){
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      if(userInput && userInput.value) userInput.value = userInput.value.trim().toLowerCase();
+      await tryUnlock();
+    });
   }
+  document.addEventListener("keydown", (e)=>{
+    if(e.key === "Enter" && !lock.classList.contains("hidden")){
+      e.preventDefault();
+      btn.click();
+    }
+  });
+  if(userInput){
+    userInput.addEventListener("blur", ()=>{
+      if(userInput.value) userInput.value = userInput.value.trim().toLowerCase();
+    });
+  }
+  if(remember){
+    remember.addEventListener("change", ()=>{
+      if(remember.checked){
+        if(userInput?.value){
+          rememberSave(userInput.value.trim().toLowerCase(), pwd.value||"");
+        }
+      }else{
+        rememberClear();
+      }
+    });
+  }
+  if(pwdToggle){
+    pwdToggle.addEventListener("click", ()=>{
+      if(!pwd) return;
+      const isPass = pwd.type === "password";
+      pwd.type = isPass ? "text" : "password";
+    });
+  }
+
+  // toujours verrouill au chargement (sauf auto-login volontaire)
+  ensureDefaultAdmin();
+  populateUsers();
+  sessionStorage.removeItem("unlocked");
+  sessionStorage.removeItem("current_user");
+  sessionStorage.removeItem("current_role");
+  if(window.setLockState) window.setLockState(true);
+  // remember me (local) : pr-remplissage email + mot de passe
+  try{
+    const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || "null");
+    if(remembered?.email){
+      if(userInput) userInput.value = remembered.email;
+      if(pwd && remembered?.pass) pwd.value = remembered.pass;
+      if(remember) remember.checked = true;
+    }
+  }catch(e){}
 })();
 </script>
 
@@ -488,3 +676,4 @@
   </template>
 </body>
 </html>
+
