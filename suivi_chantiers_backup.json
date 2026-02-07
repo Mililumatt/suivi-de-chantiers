@@ -52,7 +52,7 @@
       "id": "f490f0e019c0571bee2",
       "end": "2026-02-06",
       "notes": "",
-      "owner": "Équipe interne",
+      "owner": "RSG/RI",
       "start": "2026-01-26",
       "status": "ETUDE",
       "vendor": "",
@@ -122,7 +122,7 @@
     {
       "id": "92d410e719c23d422cc",
       "end": "2026-02-06",
-      "owner": "Équipe interne",
+      "owner": "RSG/RI",
       "start": "2026-01-05",
       "status": "ETUDE",
       "vendor": "",
@@ -132,12 +132,12 @@
     {
       "id": "75f862d619c241bfe17",
       "end": "2026-02-06",
-      "owner": "Équipe interne",
+      "owner": "RSG/RI",
       "start": "2026-02-02",
       "status": "ETUDE",
       "vendor": "",
       "projectId": "3e86100919c04fb8456",
-      "roomNumber": ""
+      "roomNumber": "Étude"
     },
     {
       "id": "3068784419c27a966e0",
@@ -208,6 +208,16 @@
       "vendor": "",
       "projectId": "83fac1eb19c15d95804",
       "roomNumber": "Maçonnerie"
+    },
+    {
+      "id": "b5c1e70219c37f2502f",
+      "end": "2026-02-09",
+      "owner": "RSG/RI",
+      "start": "2026-01-12",
+      "status": "ETUDE",
+      "vendor": "",
+      "projectId": "fd47202319c27a87d06",
+      "roomNumber": "Étude"
     }
   ],
   "ui": {

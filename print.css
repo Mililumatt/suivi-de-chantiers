@@ -1,16 +1,16 @@
-/* Impression Gantt et tableaux – mode pro A4 paysage */
+/* Impression Gantt et tableaux  mode pro A4 paysage */
 @page {
   size: A4 landscape;
   margin: 10mm;
 }
 
-/* Ne garder que le contenu injecté pour l'impression */
+/* Ne garder que le contenu inject pour l'impression */
 @media print {
   body.print-mode > *:not(#printInjection) { display:none !important; }
   #printInjection { display:block !important; page-break-before: avoid; }
 }
 
-/* Cacher les éléments d'UI interactifs */
+/* Cacher les lments d'UI interactifs */
 .actions,
 .sidebar,
 #tabs,
@@ -31,7 +31,7 @@
 #btnExport {
   display: none !important;
 }
-/* Masquer les champs d'édition en impression */
+/* Masquer les champs d'dition en impression */
 #viewProject .grid2,
 #viewProject .card .row { display:none !important; }
 
@@ -125,12 +125,12 @@ body {
   padding: 4px 6px !important;
 }
 
-/* Sauts de page maîtrisés */
+/* Sauts de page matriss */
 .page-break {
   page-break-after: always;
 }
 
-/* Ordre d'impression : cartouche -> gantt -> légende -> tableau */
+/* Ordre d'impression : cartouche -> gantt -> lgende -> tableau */
 .print-order {
   display: flex;
   flex-direction: column;

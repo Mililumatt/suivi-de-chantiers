@@ -1,6 +1,6 @@
-// SUiVI DE CHANTIERS - état embarqué forcé (pas de localStorage)
+﻿// SUiVI DE CHANTIERS - état embarqu forc (pas de localStorage)
 
-// Projet : Rénovation Bureau Pastorale + 1 tâche datée
+// Projet : Rénovation Bureau Pastorale + 1 tâche date
 
 
 
@@ -225,12 +225,18 @@ async function saveUsersToSupabase(users){
 // expose for login overlay (index.html)
 window.saveUsersToSupabase = saveUsersToSupabase;
 
-async function loadUsersFromSupabase(){
+async function loadUsersFromSupabase(force=false){
   const sb = _getSupabaseClient();
   if(!sb) return false;
   const session = await _ensureSession();
   if(!session || !session.user) return false;
   try{
+    if(!force){
+      const localUsers = loadUsers();
+      if(localUsers && localUsers.length > 0){
+        return false;
+      }
+    }
     const { data, error } = await sb
       .from(SUPABASE_USERS_TABLE)
       .select("users_json, updated_at")
@@ -246,6 +252,13 @@ async function loadUsersFromSupabase(){
     return false;
   }
 }
+window.forceLoadUsersFromSupabase = async function(){
+  try{
+    return await loadUsersFromSupabase(true);
+  }catch(e){
+    return false;
+  }
+};
 
 
 window.loadAppStateFromSupabase = async function(){
@@ -282,7 +295,7 @@ window.loadAppStateFromSupabase = async function(){
 
 
 
-    // IMPORTANT : on remplace UNIQUEMENT l'etat global, puis on rend
+    // IMPORTANT : on remplace UNIQUEMENT l'eétat global, puis on rend
 
     state = normalizeState(data.state_json);
 
@@ -377,7 +390,7 @@ const STATUSES = [
 
   {v:"CHANTIER_COMPLET", label:"Chantier complet"},
 
-  {v:"ELECTRICITE", label:"lectricité"},
+  {v:"ELECTRICITE", label:"Électricité"},
 
   {v:"PEINTURE", label:"Peinture"},
 
@@ -405,7 +418,7 @@ const STATUSES = [
 
   {v:"TOITURE",      label:"Toiture / étanchéité"},
 
-  {v:"ETUDE",        label:"tude"},
+  {v:"ETUDE",        label:"Étude"},
 
 ];
 
@@ -483,7 +496,7 @@ function updateSidebarTop(){
   document.documentElement.style.setProperty("--sidebar-top", `${window.__sidebarTopLocked}px`);
 }
 
-// verrouille la position de la sidebar une fois la mise en page stabilisée
+// verrouille la position de la sidebar une fois la mise en page stabilise
 function _lockSidebarAfterLayout(){
   if(window.__sidebarTopLocked) return;
   requestAnimationFrame(()=>{
@@ -642,6 +655,9 @@ function loadUsers(){
 function saveUsers(list){
   try{
     localStorage.setItem(USERS_KEY, JSON.stringify(list||[]));
+    try{
+      if(typeof window.populateLoginUsers === "function") window.populateLoginUsers();
+    }catch(e){}
     try{ saveUsersToSupabase(list||[]); }catch(e){}
   }catch(e){}
 }
@@ -679,7 +695,7 @@ function renderUsersList(){
     <div class="config-user-item">
       <div>
         <div><strong>${attrEscape(u.name||"")}</strong></div>
-        <div class="config-user-meta">${attrEscape(u.email||"") || ""} · ${u.role==="admin" ? "Admin" : "Utilisateur"}</div>
+        <div class="config-user-meta">${attrEscape(u.email||"") || ""}  ${u.role==="admin" ? "Admin" : "Utilisateur"}</div>
       </div>
       <div class="config-user-actions">
         <button class="btn btn-ghost cfg-user-edit" data-user="${attrEscape(u.name)}">Modifier</button>
@@ -709,13 +725,13 @@ function renderUsersList(){
       const newName = prompt("Nom d'utilisateur :", users[idx].name) || "";
       if(!newName) return;
       const newEmail = prompt("Email :", users[idx].email||"") || "";
-      const newRole = (prompt("Rôle (admin/user) :", users[idx].role||"user") || users[idx].role || "user").toLowerCase();
+      const newRole = (prompt("Rle (admin/user) :", users[idx].role||"user") || users[idx].role || "user").toLowerCase();
       const role = newRole === "admin" ? "admin" : "user";
       if(users.some((u,i)=> i!==idx && u.name.toLowerCase()===newName.toLowerCase())){
-        alert("Nom déjà utilisé."); return;
+        alert("Nom dj utilis."); return;
       }
       if(newEmail && users.some((u,i)=> i!==idx && (u.email||"").toLowerCase()===newEmail.toLowerCase())){
-        alert("Email déjà utilisé."); return;
+        alert("Email dj utilis."); return;
       }
       users[idx].name = newName;
       users[idx].email = newEmail;
@@ -929,11 +945,13 @@ const ownerType = (o="")=>{
 
   const k=o.toLowerCase();
 
+  if(k.includes("rsg/ri") || k.includes("rsg") || k.includes("ri")) return "rsgri";
+
   const hasInt = k.includes("interne");
 
   const hasExt = k.includes("externe");
 
-  // Plus de catégorie "mixte" : on priorise "interne" si exclusif, sinon "externe".
+  // Plus de catgorie "mixte" : on priorise "interne" si exclusif, sinon "externe".
 
   if(hasInt && !hasExt) return "interne";
 
@@ -947,15 +965,16 @@ const ownerBadge = (o="")=>{
 
   const k = o.toLowerCase();
 
-  // Palette alignée avec le graphique de charge
+  // Palette aligne avec le graphique de charge
 
   let color = "#16a34a"; // interne par défaut
 
+  if(k.includes("rsg/ri") || k.includes("rsg") || k.includes("ri")) color = "#2563eb"; // RSG/RI
   if(k.includes("interne") && k.includes("externe")) color = "#b45309"; // mix -> externe
 
   else if(k.includes("externe")) color = "#b45309"; // prestataire externe
 
-  else if(k.includes("interne")) color = "#16a34a"; // équipe interne
+  else if(k.includes("interne")) color = "#16a34a"; // Équipe interne
 
   return `<span class="badge owner" style="background:${color};border-color:${color};color:#fff;">${o}</span>`;
 
@@ -966,6 +985,10 @@ const ownerBadge = (o="")=>{
 const vendorBadge = (v="")=>{
 
   const k = v.toLowerCase();
+
+  if(k.includes("rsg/ri") || k.includes("rsg") || k.includes("ri")){
+    return `<span class="badge owner" style="background:#2563eb;border-color:#2563eb;color:#fff;">${v}</span>`;
+  }
 
   const isInternal = k.includes("interne");
 
@@ -1137,7 +1160,7 @@ function setupVendorPicker(){
 
   if(box){
 
-    box.addEventListener("mousedown",(e)=>e.preventDefault()); // empêcher blur avant le click
+    box.addEventListener("mousedown",(e)=>e.preventDefault()); // empcher blur avant le click
 
   }
 
@@ -1255,7 +1278,7 @@ function setupDescriptionPicker(){
 
   if(box){
 
-    box.addEventListener("mousedown",(e)=>e.preventDefault()); // empêcher blur avant le click
+    box.addEventListener("mousedown",(e)=>e.preventDefault()); // empcher blur avant le click
 
   }
 
@@ -1301,7 +1324,7 @@ function renderVendorDropdown(filter=""){
 
   if(!box || !input) return;
 
-  // s'assurer que les prestataires supprimés ne réapparaissent pas
+  // s'assurer que les prestataires supprims ne rapparaissent pas
 
   const deleted = new Set(loadDeletedVendors().map(x=>x.toLowerCase()));
 
@@ -1317,7 +1340,7 @@ function renderVendorDropdown(filter=""){
 
   if(list.length===0){
 
-    box.innerHTML = `<div class="vendor-empty">Aucun résultat</div>`;
+    box.innerHTML = `<div class="vendor-empty">Aucun rsultat</div>`;
 
   }else{
 
@@ -1367,7 +1390,7 @@ function renderVendorManager(){
 
   if(vendorsCache.length===0){
 
-    panel.innerHTML = `<div class="vendor-empty">Aucun prestataire enregistré</div>`;
+    panel.innerHTML = `<div class="vendor-empty">Aucun prestataire enregistr</div>`;
 
     return;
 
@@ -1403,7 +1426,7 @@ function renderVendorManager(){
 
       if(!trimmed) return;
 
-      // retirer de la liste des supprimés si présent
+      // retirer de la liste des supprims si prsent
 
       let deleted = loadDeletedVendors().filter(x=> x.toLowerCase()!==oldName.toLowerCase());
 
@@ -1417,7 +1440,7 @@ function renderVendorManager(){
 
       saveVendorsRegistry(vendorsCache);
 
-      // mettre à jour toutes les tâches utilisant l'ancien nom
+      // mettre  jour toutes les tâches utilisant l'ancien nom
 
       (state?.tasks||[]).forEach(t=>{
 
@@ -1451,7 +1474,7 @@ function renderVendorManager(){
 
       saveVendorsRegistry(vendorsCache);
 
-      // ajouter à la liste des supprimés pour filtrage futur
+      // ajouter  la liste des supprims pour filtrage futur
 
       const deleted = Array.from(new Set([...loadDeletedVendors(), name]));
 
@@ -1503,7 +1526,7 @@ function renderDescriptionDropdown(filter=""){
 
   if(list.length===0){
 
-    box.innerHTML = `<div class="vendor-empty">Aucun résultat</div>`;
+    box.innerHTML = `<div class="vendor-empty">Aucun rsultat</div>`;
 
   }else{
 
@@ -1561,7 +1584,7 @@ function renderDescriptionManager(){
 
   if(descCache.length===0){
 
-    panel.innerHTML = `<div class="vendor-empty">Aucune description enregistrée</div>`;
+    panel.innerHTML = `<div class="vendor-empty">Aucune description enregistre</div>`;
 
     return;
 
@@ -1689,7 +1712,7 @@ function normalizeState(raw){
 
   }));
 
-  // filtrer les prestataires supprimés
+  // filtrer les prestataires supprims
 
   const deleted = new Set(loadDeletedVendors().map(x=>x.toLowerCase()));
 
@@ -1729,9 +1752,22 @@ const unformatDate = (fr)=>{
 
 };
 
+function toInputDate(val){
+  if(!val) return "";
+  if(val instanceof Date){
+    return val.toISOString().slice(0,10);
+  }
+  const s = String(val).trim();
+  if(!s) return "";
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+  return s;
+}
 
 
-// -------- Multisélection Statuts / Corps d'état --------
+
+// -------- Multislection Statuts / Corps d'état --------
 
 function buildStatusMenu(){
 
@@ -1759,7 +1795,7 @@ function buildStatusMenu(){
 
     item.onclick=(e)=>{
 
-      e.stopPropagation(); // garder le menu ouvert pendant la multi-sélection
+      e.stopPropagation(); // garder le menu ouvert pendant la multi-slection
 
       const v=item.dataset.v;
 
@@ -1851,11 +1887,11 @@ const EMBEDDED_BACKUP = {
 
   tasks: [
 
-    { id:"c807465d19c05012673", projectId:"3e86100919c04fb8456", roomNumber:"Rénovation", status:"ELECTRICITE,PEINTURE,MOBILIER,AMENAGEMENTS", owner:"quipe interne", start:"2026-02-02", end:"2026-02-27", notes:"" },
+    { id:"c807465d19c05012673", projectId:"3e86100919c04fb8456", roomNumber:"Rénovation", status:"ELECTRICITE,PEINTURE,MOBILIER,AMENAGEMENTS", owner:"Équipe interne", start:"2026-02-02", end:"2026-02-27", notes:"" },
 
-    { id:"f490f0e019c0571bee2", projectId:"0c644af019c05700845", roomNumber:"Rénovation CH 011", status:"PEINTURE,TDV,AMENAGEMENTS", owner:"quipe interne", start:"2026-02-02", end:"2026-02-14", notes:"" },
+    { id:"f490f0e019c0571bee2", projectId:"0c644af019c05700845", roomNumber:"Rénovation CH 011", status:"PEINTURE,TDV,AMENAGEMENTS", owner:"Équipe interne", start:"2026-02-02", end:"2026-02-14", notes:"" },
 
-    { id:"840b3cb519c05732884", projectId:"0c644af019c05700845", roomNumber:"Rénovation CH 010", status:"PEINTURE,AMENAGEMENTS,TDV", owner:"quipe interne", start:"2026-02-16", end:"2026-02-28", notes:"" }
+    { id:"840b3cb519c05732884", projectId:"0c644af019c05700845", roomNumber:"Rénovation CH 010", status:"PEINTURE,AMENAGEMENTS,TDV", owner:"Équipe interne", start:"2026-02-16", end:"2026-02-28", notes:"" }
 
   ],
 
@@ -2095,7 +2131,7 @@ function load(){
 
       }catch(e){}
 
-      // 3) fallback état embarqué
+      // 3) fallback état embarqu
 
       state = normalizeState(defaultState());
 
@@ -2109,7 +2145,7 @@ function load(){
 
     .catch(()=>{
 
-      // si fetch échoue, on tente localStorage puis default
+      // si fetch choue, on tente localStorage puis default
 
       try{
 
@@ -2269,7 +2305,7 @@ function flashSaved(){
 
   const old = btn.textContent;
 
-  btn.textContent = " Sauvegardé";
+  btn.textContent = " Sauvegard";
 
   btn.classList.add("pulse");
 
@@ -2331,7 +2367,7 @@ function setLockState(flag){
     forbidBtn.disabled = isLocked;
     forbidBtn.classList.toggle("is-disabled", isLocked);
   }
-  // gestion prestataires : désactiver + masquer panels/dropdown
+  // gestion prestataires : dsactiver + masquer panels/dropdown
 
   const manageBtn = el("btnManageVendors");
 
@@ -2421,6 +2457,8 @@ function setLockState(flag){
     plive.classList.toggle("is-disabled", isLocked);
   }
 }
+window.setLockState = setLockState;
+window.updateRoleUI = updateRoleUI;
 
 
 function statusLabels(values){
@@ -2505,7 +2543,7 @@ function getWorkloadRange(tasks, boundsTasks=tasks, stateRef=null){
 
   }
 
-  // school: 1er sept -> 31 août
+  // school: 1er sept -> 31 aot
 
   return {start:new Date(year,8,1), end:new Date(year+1,7,31)};
 
@@ -2547,7 +2585,7 @@ function syncWorkloadFilterUI(tasks, boundsTasks=tasks, uiIds=null, stateRef=nul
 
   if(!st.end) st.end = toDateInput(max);
 
-  // options année
+  // options anne
 
   let opts="";
 
@@ -2751,7 +2789,7 @@ function overlapDays(aStart,aEnd,bStart,bEnd){
 
 function barGeometry(taskStart, taskEnd, weekStart){
 
-  const weekEnd = addDays(weekStart,4); // semaine ouvrée
+  const weekEnd = addDays(weekStart,4); // semaine ouvre
 
   const start = taskStart > weekStart ? taskStart : weekStart;
 
@@ -2837,7 +2875,7 @@ function keyToLabel(key, mode){
 
 function computeWorkloadData(tasks, mode="week", rangeStart=null, rangeEnd=null){
 
-  const map = new Map(); // key -> {internal, external, total, anchor}
+  const map = new Map(); // key -> {internal, external, rsgri, total, anchor}
 
   tasks.filter(t=>t.start && t.end).forEach(t=>{
 
@@ -2861,15 +2899,16 @@ function computeWorkloadData(tasks, mode="week", rangeStart=null, rangeEnd=null)
 
       const anchor = mode==="day" ? d.getTime() : startOfWeek(d).getTime();
 
-      if(!map.has(key)) map.set(key,{internal:0,external:0,total:0,anchor});
+      if(!map.has(key)) map.set(key,{internal:0,external:0,rsgri:0,total:0,anchor});
 
       const slot = map.get(key);
 
-      if(typ==="interne") slot.internal+=1;
+      if(typ==="rsgri") slot.rsgri+=1;
+      else if(typ==="interne") slot.internal+=1;
 
       else slot.external+=1; // "externe" + inconnus
 
-      slot.total = slot.internal + slot.external;
+      slot.total = slot.internal + slot.external + slot.rsgri;
 
     }
 
@@ -2927,7 +2966,7 @@ function renderGantt(projectId){
 
   if(tasks.length===0){
 
-    wrap.innerHTML="<div class='gantt-empty'>Aucune tâche datée.</div>";
+    wrap.innerHTML="<div class='gantt-empty'>Aucune tâche date.</div>";
 
     return;
 
@@ -2963,7 +3002,7 @@ function renderGantt(projectId){
 
   let html="<div class='tablewrap gantt-table'><table class='table' style='--gcol1:200px;--gcol2:120px;--gcol3:70px'>";
 
-  html+="<thead><tr><th class='gantt-task-col-project gantt-col-task'>Tâche</th><th class='gantt-col-vendor' style='width:120px'>Prestataire</th><th class='gantt-col-status' style='width:70px'>Statut</th>";
+  html+="<thead><tr><th class='gantt-task-col-project gantt-col-task'>Tche</th><th class='gantt-col-vendor' style='width:120px'>Prestataire</th><th class='gantt-col-status' style='width:70px'>Statut</th>";
 
   weeks.forEach(w=>{
 
@@ -3005,7 +3044,10 @@ function renderGantt(projectId){
 
       if(t.vendor) set.add(t.vendor);
 
-      if((t.owner||"").toLowerCase().includes("interne")) set.add("quipe interne");
+      const typ = ownerType(t.owner);
+      if(typ === "interne") set.add("Équipe interne");
+      if(typ === "rsgri") set.add("RSG/RI");
+      if(typ === "externe" && !t.vendor) set.add("Prestataire externe");
 
       if(set.size===0) return "<span class='text-muted'></span>";
 
@@ -3148,6 +3190,9 @@ function renderProjectTasks(projectId){
     const c = STATUS_COLORS[statuses[0]] || "#1f2937";
 
     const ownerBadgeHtml = t.owner ? ownerBadge(t.owner) : "";
+    const typ = ownerType(t.owner);
+    const durDays = durationDays(t.start,t.end);
+    const durLabel = typ === "rsgri" ? `${durDays} j (${durDays*2} h)` : `${durDays} j`;
 
     h+=`<tr data-task="${t.id}">
 
@@ -3161,7 +3206,7 @@ function renderProjectTasks(projectId){
 
       <td>${formatDate(t.end)||""}</td>
 
-      <td>${durationDays(t.start,t.end)}</td>
+      <td>${durLabel}</td>
 
     </tr>`;
 
@@ -3203,7 +3248,7 @@ function renderMasterGantt(){
 
   if(tasks.length===0){
 
-    wrap.innerHTML = "<div class='gantt-empty'>Aucune tâche datée.</div>";
+    wrap.innerHTML = "<div class='gantt-empty'>Aucune tâche date.</div>";
 
     return;
 
@@ -3237,7 +3282,7 @@ function renderMasterGantt(){
 
   let html="<div class='tablewrap gantt-table'><table class='table' style='--gcol1:150px;--gcol2:140px;--gcol3:90px'>";
 
-  html+="<thead><tr><th class='gantt-col-task' style='width:150px'>Tâche</th><th class='gantt-col-vendor' style='width:140px'>Prestataire</th><th class='gantt-col-status' style='width:90px'>Statut</th>";
+  html+="<thead><tr><th class='gantt-col-task' style='width:150px'>Tche</th><th class='gantt-col-vendor' style='width:140px'>Prestataire</th><th class='gantt-col-status' style='width:90px'>Statut</th>";
 
   weeks.forEach(w=>{
 
@@ -3279,7 +3324,10 @@ function renderMasterGantt(){
 
       if(t.vendor) set.add(t.vendor);
 
-      if((t.owner||"").toLowerCase().includes("interne")) set.add("quipe interne");
+      const typ = ownerType(t.owner);
+      if(typ === "interne") set.add("Équipe interne");
+      if(typ === "rsgri") set.add("RSG/RI");
+      if(typ === "externe" && !t.vendor) set.add("Prestataire externe");
 
       if(set.size===0) return "<span class='text-muted'></span>";
 
@@ -3539,7 +3587,7 @@ function exportSvgToPdf(svgId, title="Export", pieId=null, tasksOverride=null){
 
         <div class="legend">
 
-          <div class="item"><span class="dot int"></span>quipe interne ${pInt}%</div>
+          <div class="item"><span class="dot int"></span>Équipe interne ${pInt}%</div>
 
           <div class="item"><span class="dot ext"></span>Prestataire externe ${pExt}%</div>
 
@@ -3589,7 +3637,7 @@ function exportSvgToPdf(svgId, title="Export", pieId=null, tasksOverride=null){
 
       w.print();
 
-      // refermer la fenêtre d'export après l'impression (ou après un court délai si pas de callback)
+      // refermer la fentre d'export aprs l'impression (ou aprs un court dlai si pas de callback)
 
       setTimeout(()=>{ try{ w.close(); }catch(e){} }, 800);
 
@@ -3605,7 +3653,7 @@ function exportSvgToPdf(svgId, title="Export", pieId=null, tasksOverride=null){
 
         targetImg.addEventListener("load", ()=>launchPrint(), { once:true });
 
-        // filet de secours en cas d'absence d'événement load
+        // filet de secours en cas d'absence d'vnement load
 
         setTimeout(()=>launchPrint(),500);
 
@@ -3674,6 +3722,7 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
   const gradIntId = `${idPrefix}-grad-int`;
 
   const gradExtId = `${idPrefix}-grad-ext`;
+  const gradRsgId = `${idPrefix}-grad-rsg`;
 
   const brushedId = `${idPrefix}-brushed`;
 
@@ -3697,13 +3746,13 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
 
   if(data.length===0){
 
-    svg.innerHTML = `<text x="${w/2}" y="${h/2}" text-anchor="middle" fill="#6b7280" font-size="12">Aucune tâche datée</text>`;
+    svg.innerHTML = `<text x="${w/2}" y="${h/2}" text-anchor="middle" fill="#6b7280" font-size="12">Aucune tâche date</text>`;
 
     if(pieSvg){
 
       pieSvg.setAttribute("viewBox", "0 0 720 360");
 
-      pieSvg.innerHTML = `<text x="360" y="180" text-anchor="middle" fill="#6b7280" font-size="12">Aucune donnée</text>`;
+      pieSvg.innerHTML = `<text x="360" y="180" text-anchor="middle" fill="#6b7280" font-size="12">Aucune donne</text>`;
 
     }
 
@@ -3725,7 +3774,7 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
 
   const groupW = Math.max(26, Math.min(90, (chartW / data.length) - groupGap));
 
-  const barW = Math.max(10, (groupW - innerGap) / 2);
+  const barW = Math.max(8, (groupW - innerGap*2) / 3);
 
   const labelEvery = 1;
 
@@ -3766,26 +3815,26 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
     const gx = xStart + idx*(groupW+groupGap);
 
     const xInt = gx;
-
     const xExt = gx + barW + innerGap;
+    const xRsg = gx + (barW + innerGap) * 2;
 
     let hInt = (d.internal/maxVal)*chartH;
-
     let hExt = (d.external/maxVal)*chartH;
+    let hRsg = (d.rsgri/maxVal)*chartH;
 
     if(d.internal > 0 && hInt < 6) hInt = 6;
-
     if(d.external > 0 && hExt < 6) hExt = 6;
+    if(d.rsgri > 0 && hRsg < 6) hRsg = 6;
 
     const yBase = m.t + chartH;
 
     const yInt = yBase - hInt;
-
     const yExt = yBase - hExt;
+    const yRsg = yBase - hRsg;
 
     bars+=`<rect class="wl-bar-internal" fill="url(#${gradIntId})" filter="url(#${barShadowId})" x="${xInt}" y="${yInt}" width="${barW}" height="${hInt}" rx="3" ry="3"></rect>`;
-
     bars+=`<rect class="wl-bar-external" fill="url(#${gradExtId})" filter="url(#${barShadowId})" x="${xExt}" y="${yExt}" width="${barW}" height="${hExt}" rx="3" ry="3"></rect>`;
+    bars+=`<rect class="wl-bar-rsgri" fill="url(#${gradRsgId})" filter="url(#${barShadowId})" x="${xRsg}" y="${yRsg}" width="${barW}" height="${hRsg}" rx="3" ry="3"></rect>`;
 
     const lbl = keyToLabel(d.key, mode);
 
@@ -3796,26 +3845,26 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
     bars+=`<text class="wl-axis" x="${lx}" y="${ly}" text-anchor="middle">${lbl}</text>`;
 
     const valueYInt = Math.max(m.t + 12, yBase - Math.max(hInt, 0) - 8);
-
     const valueYExt = Math.max(m.t + 12, yBase - Math.max(hExt, 0) - 8);
+    const valueYRsg = Math.max(m.t + 12, yBase - Math.max(hRsg, 0) - 8);
 
     bars+=`<text class="wl-value" x="${xInt + barW/2}" y="${valueYInt}" text-anchor="middle">${d.internal} j</text>`;
-
     bars+=`<text class="wl-value" x="${xExt + barW/2}" y="${valueYExt}" text-anchor="middle">${d.external} j</text>`;
+    bars+=`<text class="wl-value" x="${xRsg + barW/2}" y="${valueYRsg}" text-anchor="middle">${d.rsgri} j</text>`;
 
   });
 
   const totalInt = data.reduce((s,d)=>s+d.internal,0);
-
   const totalExt = data.reduce((s,d)=>s+d.external,0);
+  const totalRsg = data.reduce((s,d)=>s+d.rsgri,0);
 
-  const totalAll = Math.max(1, totalInt + totalExt);
+  const totalAll = Math.max(1, totalInt + totalExt + totalRsg);
 
   const pctInt = Math.round((totalInt/totalAll)*100);
+  const pctExt = Math.round((totalExt/totalAll)*100);
+  const pctRsg = Math.max(0, 100 - pctInt - pctExt);
 
-  const pctExt = 100 - pctInt;
-
-  const legend=`<g transform="translate(${w-210},12)">
+  const legend=`<g transform="translate(${w-240},12)">
 
     <rect x="0" y="0" width="12" height="12" rx="3" fill="url(#${gradIntId})"></rect>
 
@@ -3825,13 +3874,17 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
 
     <text class="wl-axis" x="18" y="31">Externe ${pctExt}%</text>
 
+    <rect x="0" y="40" width="12" height="12" rx="3" fill="url(#${gradRsgId})"></rect>
+
+    <text class="wl-axis" x="18" y="51">RSG/RI ${pctRsg}%</text>
+
   </g>`;
 
   const legendOverlay = `
 
-    <g transform="translate(${w-310},12)">
+    <g transform="translate(${w-390},12)">
 
-      <rect x="-6" y="-6" width="270" height="26" rx="8" ry="8" fill="rgba(255,255,255,0.92)" stroke="#e5e7eb"/>
+      <rect x="-6" y="-6" width="350" height="26" rx="8" ry="8" fill="rgba(255,255,255,0.92)" stroke="#e5e7eb"/>
 
       <rect x="0" y="0" width="12" height="12" rx="3" fill="url(#${gradIntId})"></rect>
 
@@ -3840,6 +3893,10 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
       <rect x="120" y="0" width="12" height="12" rx="3" fill="url(#${gradExtId})"></rect>
 
       <text class="wl-axis" x="138" y="11">Externe ${pctExt}%</text>
+
+      <rect x="240" y="0" width="12" height="12" rx="3" fill="url(#${gradRsgId})"></rect>
+
+      <text class="wl-axis" x="258" y="11">RSG/RI ${pctRsg}%</text>
 
     </g>`;
 
@@ -3886,6 +3943,11 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
         <stop offset="100%" stop-color="#475569" stop-opacity="0.9"/>
 
       </linearGradient>
+      <linearGradient id="${gradRsgId}" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.98"/>
+        <stop offset="55%" stop-color="#3b82f6" stop-opacity="0.92"/>
+        <stop offset="100%" stop-color="#2563eb" stop-opacity="0.9"/>
+      </linearGradient>
 
       <filter id="${barShadowId}" x="-20%" y="-20%" width="140%" height="160%">
 
@@ -3911,7 +3973,7 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
 
     pieSvg.setAttribute("font-family", fontFamily);
 
-    const pieTotal = Math.max(1, totalInt + totalExt);
+    const pieTotal = Math.max(1, totalInt + totalExt + totalRsg);
 
     const cx = pw/2;
 
@@ -3941,92 +4003,52 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
 
     let pieMarkup = `<rect class="wl-bg" x="0" y="0" width="${pw}" height="${ph}" fill="url(#${brushedId})"></rect>`;
 
-    if(totalInt + totalExt > 0){
-
-      const intAngle = (totalInt / pieTotal) * 360;
+    if(totalInt + totalExt + totalRsg > 0){
 
       const gap = 8;
+      const segments = [
+        { key:"interne", label:"Interne", value: totalInt, pct: pctInt, grad: gradIntId },
+        { key:"externe", label:"Externe", value: totalExt, pct: pctExt, grad: gradExtId },
+        { key:"rsgri", label:"RSG/RI", value: totalRsg, pct: pctRsg, grad: gradRsgId },
+      ].filter(s=>s.value>0);
 
-      const startA = 0;
-
-      const intMid = startA + intAngle/2;
-
-      const extMid = startA + intAngle + (360-intAngle)/2;
-
-      const intOff = polar(0,0,gap,intMid);
-
-      const extOff = polar(0,0,gap,extMid);
-
-      if(totalExt === 0){
-
+      if(segments.length === 1){
+        const s = segments[0];
         pieMarkup += `
-
-          <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${gradIntId})"></circle>
-
-          <text class="wl-axis" x="${cx}" y="${cy}" text-anchor="middle">${pctInt}%</text>
-
-          <text class="wl-value" x="${cx}" y="${cy + 14}" text-anchor="middle">${totalInt} j</text>
-
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${s.grad})"></circle>
+          <text class="wl-axis" x="${cx}" y="${cy}" text-anchor="middle">${s.pct}%</text>
+          <text class="wl-value" x="${cx}" y="${cy + 14}" text-anchor="middle">${s.value} j</text>
         `;
-
-      }else if(totalInt === 0){
-
-        pieMarkup += `
-
-          <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${gradExtId})"></circle>
-
-          <text class="wl-axis" x="${cx}" y="${cy}" text-anchor="middle">${pctExt}%</text>
-
-          <text class="wl-value" x="${cx}" y="${cy + 14}" text-anchor="middle">${totalExt} j</text>
-
-        `;
-
       }else{
-
-        const intPath = arcPath(cx+intOff.x, cy+intOff.y, r, startA, startA+intAngle);
-
-        const extPath = arcPath(cx+extOff.x, cy+extOff.y, r, startA+intAngle, 360);
-
-        const intLabelPos = polar(cx+intOff.x, cy+intOff.y, r*0.62, intMid);
-
-        const extLabelPos = polar(cx+extOff.x, cy+extOff.y, r*0.62, extMid);
-
-        pieMarkup += `
-
-          <path d="${intPath}" fill="url(#${gradIntId})"></path>
-
-          <path d="${extPath}" fill="url(#${gradExtId})"></path>
-
-          <text class="wl-axis" x="${intLabelPos.x}" y="${intLabelPos.y}" text-anchor="middle">${pctInt}%</text>
-
-          <text class="wl-axis" x="${extLabelPos.x}" y="${extLabelPos.y}" text-anchor="middle">${pctExt}%</text>
-
-          <text class="wl-value" x="${intLabelPos.x}" y="${intLabelPos.y + 14}" text-anchor="middle">${totalInt} j</text>
-
-          <text class="wl-value" x="${extLabelPos.x}" y="${extLabelPos.y + 14}" text-anchor="middle">${totalExt} j</text>
-
-        `;
-
+        let cursor = 0;
+        segments.forEach(seg=>{
+          const angle = (seg.value / pieTotal) * 360;
+          const startA = cursor;
+          const endA = cursor + angle;
+          const midA = startA + angle / 2;
+          const off = polar(0,0,gap,midA);
+          const path = arcPath(cx+off.x, cy+off.y, r, startA, endA);
+          const labelPos = polar(cx+off.x, cy+off.y, r*0.62, midA);
+          pieMarkup += `
+            <path d="${path}" fill="url(#${seg.grad})"></path>
+            <text class="wl-axis" x="${labelPos.x}" y="${labelPos.y}" text-anchor="middle">${seg.pct}%</text>
+            <text class="wl-value" x="${labelPos.x}" y="${labelPos.y + 14}" text-anchor="middle">${seg.value} j</text>
+          `;
+          cursor = endA;
+        });
       }
 
       pieMarkup += `
-
-        <text class="wl-axis" x="${cx}" y="${cy + r + 26}" text-anchor="middle">Répartition Interne / Externe</text>
-
-        <g transform="translate(${cx-150},${cy + r + 42})">
-
+        <text class="wl-axis" x="${cx}" y="${cy + r + 26}" text-anchor="middle">Répartition Interne / Externe / RSG/RI</text>
+        <g transform="translate(${cx-210},${cy + r + 42})">
           <rect x="0" y="0" width="12" height="12" rx="3" fill="url(#${gradIntId})"></rect>
-
           <text class="wl-axis" x="18" y="11">Interne ${pctInt}%  ${totalInt} j</text>
-
-          <rect x="170" y="0" width="12" height="12" rx="3" fill="url(#${gradExtId})"></rect>
-
-          <text class="wl-axis" x="188" y="11">Externe ${pctExt}%  ${totalExt} j</text>
-
+          <rect x="150" y="0" width="12" height="12" rx="3" fill="url(#${gradExtId})"></rect>
+          <text class="wl-axis" x="168" y="11">Externe ${pctExt}%  ${totalExt} j</text>
+          <rect x="300" y="0" width="12" height="12" rx="3" fill="url(#${gradRsgId})"></rect>
+          <text class="wl-axis" x="318" y="11">RSG/RI ${pctRsg}%  ${totalRsg} j</text>
         </g>
-
       `;
-
     }
 
     pieSvg.innerHTML = `${defs}${pieMarkup}`;
@@ -4087,7 +4109,7 @@ function renderTabs(){
 
     if(n.includes("pastorale")) return "";
 
-    return "️";
+    return "";
 
   };
 
@@ -4105,7 +4127,7 @@ function renderTabs(){
 
     const bMin = bDates.length ? Math.min(...bDates) : Infinity;
 
-    if(aMin!==bMin) return aMin - bMin; // plus récent (valeur numérique plus petite) en haut
+    if(aMin!==bMin) return aMin - bMin; // plus rcent (valeur numrique plus petite) en haut
 
     return (a.name||"").localeCompare(b.name||"");
 
@@ -4188,7 +4210,7 @@ function renderKPIs(tasks){
 
 
 
-// Tri générique pour tableaux (master & projet)
+// Tri gnrique pour tableaux (master & projet)
 
 function sortTasks(list, cfg){
 
@@ -4293,8 +4315,8 @@ function renderMasterMetrics(tasks){
   const allDays = new Set();
 
   const internalDays = new Set();
-
   const externalDays = new Set();
+  const rsgDays = new Set();
 
   dated.forEach(t=>{
 
@@ -4304,9 +4326,10 @@ function renderMasterMetrics(tasks){
 
     if(isNaN(s)||isNaN(e)||e<s) return;
 
-    const ownsInternal = (t.owner||"").toLowerCase().includes("interne");
-
-    const ownsExternal = (t.owner||"").toLowerCase().includes("externe");
+    const typ = ownerType(t.owner);
+    const ownsInternal = typ === "interne";
+    const ownsExternal = typ === "externe" || typ === "inconnu";
+    const ownsRsg = typ === "rsgri";
 
     for(let d=new Date(s); d<=e; d.setDate(d.getDate()+1)){
 
@@ -4315,8 +4338,8 @@ function renderMasterMetrics(tasks){
       allDays.add(key);
 
       if(ownsInternal) internalDays.add(key);
-
       if(ownsExternal) externalDays.add(key);
+      if(ownsRsg) rsgDays.add(key);
 
     }
 
@@ -4324,21 +4347,21 @@ function renderMasterMetrics(tasks){
 
   const totalDays = allDays.size;
 
-  const totalHours = totalDays * 4;
-
   const internalHours = internalDays.size * 4;
-
   const externalHours = externalDays.size * 4;
+  const rsgHours = rsgDays.size * 2;
+  const totalHours = internalHours + externalHours + rsgHours;
 
   metrics.innerHTML = `
 
-    <span class="panel-chip">Durée totale : <strong>${totalDays||0} j</strong></span>
+    <span class="panel-chip">Durée totale : <span class="metric-val">${totalDays||0} j</span></span>
 
-    <span class="panel-chip">q. heures (4h/j) : <strong>${totalHours||0} h</strong></span>
+    <span class="panel-chip">Éq. heures (Int/Ext 4h/j • RSG/RI 2h/j) : <span class="metric-val">${totalHours||0} h</span></span>
 
-    <span class="panel-chip" style="background:#0f172a;color:#fff;border-color:#0f172a;">Interne : <strong>${internalDays.size||0} j</strong>  <strong>${internalHours||0} h</strong></span>
+    <span class="panel-chip" style="background:#0f172a;color:#fff;border-color:#0f172a;">Interne : <span class="metric-val">${internalDays.size||0} j</span> <span class="metric-val">${internalHours||0} h</span></span>
 
-    <span class="panel-chip" style="background:#b45309;color:#fff;border-color:#b45309;">Externe : <strong>${externalDays.size||0} j</strong>  <strong>${externalHours||0} h</strong></span>
+    <span class="panel-chip" style="background:#b45309;color:#fff;border-color:#b45309;">Externe : <span class="metric-val">${externalDays.size||0} j</span> <span class="metric-val">${externalHours||0} h</span></span>
+    <span class="panel-chip" style="background:#2563eb;color:#fff;border-color:#2563eb;">RSG/RI : <span class="metric-val">${rsgDays.size||0} j</span> <span class="metric-val">${rsgHours||0} h</span></span>
 
   `;
 
@@ -4382,7 +4405,7 @@ function filteredTasks(){
 
   });
 
-  // Filet de secours : si les filtres vident tout alors qu'on a des données, on retourne toutes les tâches
+  // Filet de secours : si les filtres vident tout alors qu'on a des donnes, on retourne toutes les tâches
 
   if(result.length===0 && state.tasks.length>0) return state.tasks;
 
@@ -4459,7 +4482,7 @@ function renderMaster(){
 
     if(inProgress.length===0){
 
-      masterLive.innerHTML = `<span class="live-title">Projet non démarré</span>`;
+      masterLive.innerHTML = `<span class="live-title">Projet non démarr</span>`;
 
     }else{
 
@@ -4568,7 +4591,7 @@ function renderProject(){
 
   el("projectTitle").textContent = `Projet : ${p.name||"Sans nom"}`;
 
-  el("projectSub").textContent = p.site || "Détails  Gantt";
+  el("projectSub").textContent = p.site || "Détails • Gantt";
 
   // métriques projet : durée totale + équivalent heures (6h/j)
 
@@ -4577,8 +4600,8 @@ function renderProject(){
   const allDays = new Set();
 
   const internalDays = new Set();
-
   const externalDays = new Set();
+  const rsgDays = new Set();
 
   projTasks.forEach(t=>{
 
@@ -4588,9 +4611,10 @@ function renderProject(){
 
     if(isNaN(s)||isNaN(e) || e<s) return;
 
-    const ownsInternal = (t.owner||"").toLowerCase().includes("interne");
-
-    const ownsExternal = (t.owner||"").toLowerCase().includes("externe");
+    const typ = ownerType(t.owner);
+    const ownsInternal = typ === "interne";
+    const ownsExternal = typ === "externe" || typ === "inconnu";
+    const ownsRsg = typ === "rsgri";
 
     for(let d=new Date(s); d<=e; d.setDate(d.getDate()+1)){
 
@@ -4599,8 +4623,8 @@ function renderProject(){
       allDays.add(key);
 
       if(ownsInternal) internalDays.add(key);
-
       if(ownsExternal) externalDays.add(key);
+      if(ownsRsg) rsgDays.add(key);
 
     }
 
@@ -4608,11 +4632,10 @@ function renderProject(){
 
   const totalDays = allDays.size;
 
-  const totalHours = totalDays * 4;
-
   const internalHours = internalDays.size * 4;
-
   const externalHours = externalDays.size * 4;
+  const rsgHours = rsgDays.size * 2;
+  const totalHours = internalHours + externalHours + rsgHours;
 
   const metrics = el("projectMetrics");
 
@@ -4620,13 +4643,14 @@ function renderProject(){
 
     metrics.innerHTML = `
 
-      <span class="panel-chip">Durée totale : <strong>${totalDays || 0} j</strong></span>
+      <span class="panel-chip">Durée totale : <span class="metric-val">${totalDays || 0} j</span></span>
 
-      <span class="panel-chip">q. heures (4h/j) : <strong>${totalHours || 0} h</strong></span>
+      <span class="panel-chip">Éq. heures (Int/Ext 4h/j • RSG/RI 2h/j) : <span class="metric-val">${totalHours || 0} h</span></span>
 
-      <span class="panel-chip" style="background:#0f172a;color:#fff;border-color:#0f172a;">Interne : <strong>${internalDays.size||0} j</strong>  <strong>${internalHours||0} h</strong></span>
+      <span class="panel-chip" style="background:#0f172a;color:#fff;border-color:#0f172a;">Interne : <span class="metric-val">${internalDays.size||0} j</span> <span class="metric-val">${internalHours||0} h</span></span>
 
-      <span class="panel-chip" style="background:#b45309;color:#fff;border-color:#b45309;">Externe : <strong>${externalDays.size||0} j</strong>  <strong>${externalHours||0} h</strong></span>
+      <span class="panel-chip" style="background:#b45309;color:#fff;border-color:#b45309;">Externe : <span class="metric-val">${externalDays.size||0} j</span> <span class="metric-val">${externalHours||0} h</span></span>
+      <span class="panel-chip" style="background:#2563eb;color:#fff;border-color:#2563eb;">RSG/RI : <span class="metric-val">${rsgDays.size||0} j</span> <span class="metric-val">${rsgHours||0} h</span></span>
 
     `;
 
@@ -4634,7 +4658,7 @@ function renderProject(){
 
 
 
-  // Bandeau live : tâches en cours à la date du jour
+  // Bandeau live : tâches en cours  la date du jour
 
   const live = el("projectLive");
 
@@ -4650,7 +4674,7 @@ function renderProject(){
 
     if(inProgress.length===0){
 
-      live.innerHTML = `<span class="live-title">Projet non démarré</span>`;
+      live.innerHTML = `<span class="live-title">Projet non démarr</span>`;
 
     }else{
 
@@ -4682,7 +4706,7 @@ function renderProject(){
 
   const siteSelect = el("p_site");
   if(siteSelect){
-    const sites = ["CDM","Collège","Ecole","LGT","NDC"].sort((a,b)=>a.localeCompare(b, "fr"));
+    const sites = ["CDM","Collège","École","LGT","NDC"].sort((a,b)=>a.localeCompare(b, "fr"));
     siteSelect.innerHTML = sites.map(s=>`<option value="${s}">${s}</option>`).join("");
     siteSelect.value = p.site || "";
     if(!siteSelect.value && p.site){ siteSelect.value = p.site; }
@@ -4741,15 +4765,21 @@ function renderProject(){
 
     el("t_vendor").value=t.vendor||"";
 
-    el("t_start").value=formatDate(t.start)||"";
+    const startVal = toInputDate(t.start);
+    const endVal = toInputDate(t.end);
+    el("t_start").value=startVal;
 
-    el("t_end").value=formatDate(t.end)||"";
+    el("t_end").value=endVal;
+    if(window.__fpStart){ try{ window.__fpStart.setDate(startVal || null, true, "Y-m-d"); }catch(e){} }
+    if(window.__fpEnd){ try{ window.__fpEnd.setDate(endVal || null, true, "Y-m-d"); }catch(e){} }
 
     setStatusSelection(t.status||"");
 
   }else{
 
     el("t_room").value=""; el("t_owner").value=""; el("t_vendor").value=""; el("t_start").value=""; el("t_end").value="";
+    if(window.__fpStart){ try{ window.__fpStart.setDate(null); }catch(e){} }
+    if(window.__fpEnd){ try{ window.__fpEnd.setDate(null); }catch(e){} }
 
     setStatusSelection("");
 
@@ -4807,7 +4837,7 @@ function renderAll(){
   closeAllOverlays();
   refreshVendorsList();
   refreshDescriptionsList();
-  // réinitialiser les filtres visibles pour éviter un filtrage bloquant
+  // rinitialiser les filtres visibles pour éviter un filtrage bloquant
 
   ["filterProject","filterStatus","filterSearch","filterStartAfter","filterEndBefore"].forEach(id=>{
 
@@ -4866,6 +4896,7 @@ function bind(){
       const lock = document.getElementById("lockscreen");
       if(lock) lock.classList.remove("hidden");
       setLockState(true);
+      try{ window.refreshLoginUsers?.(); }catch(e){}
     });
   }
   window.addEventListener("resize", ()=>{
@@ -4895,10 +4926,10 @@ function bind(){
     if(!name || !pass){ alert("Nom et mot de passe requis."); return; }
     const users = loadUsers();
     if(users.some(u=>u.name.toLowerCase()===name.toLowerCase())){
-      alert("Utilisateur déjà existant."); return;
+      alert("Utilisateur dj existant."); return;
     }
     if(email && users.some(u=>(u.email||"").toLowerCase()===email.toLowerCase())){
-      alert("Email déjà existant."); return;
+      alert("Email dj existant."); return;
     }
     const hash = await hashPassword(pass);
     users.push({name, email, role, hash});
@@ -4916,7 +4947,7 @@ function bind(){
     if(isLocked) return;
     saveState();
     try{ saveUsersToSupabase(loadUsers()); }catch(e){}
-    // Flux simple : téléchargement d'un JSON à écraser manuellement dans le dossier projet.
+    // Flux simple : tlchargement d'un JSON  craser manuellement dans le dossier projet.
     downloadBackup();
     flashSaved();
 
@@ -5250,7 +5281,7 @@ function bind(){
 
     if(isLocked) return;
 
-    // Dupliquer les valeurs affichées pour faciliter la création en série
+    // Dupliquer les valeurs affiches pour faciliter la cration en srie
 
     selectedTaskId=null;
 
@@ -5312,7 +5343,7 @@ function bind(){
 
       el("t_end").value = formatDate(t.start);
 
-      console.warn("Date de fin ajustée à la date de début pour éviter une fin antérieure.");
+      console.warn("Date de fin ajustée  la date de début pour éviter une fin antérieure.");
 
     }
 
@@ -5360,7 +5391,7 @@ function bind(){
 
   if(brandTitle){
 
-    brandTitle.innerHTML = `Suivi de Chantiers <span class="copyright">© Sébastien DUC</span>`;
+    brandTitle.innerHTML = `Suivi de Chantiers <span class="copyright"> Sébastien DUC</span>`;
 
   }
 
@@ -5392,9 +5423,9 @@ function bind(){
 
     const todayIso = new Date().toISOString().slice(0,10);
 
-    const startIso = startNode?.value ? unformatDate(startNode.value) : "";
+    const startIso = startNode?.value ? toInputDate(startNode.value) : "";
 
-    const endIso   = endNode?.value ? unformatDate(endNode.value) : "";
+    const endIso   = endNode?.value ? toInputDate(endNode.value) : "";
 
     if(startNode){
 
@@ -5416,6 +5447,7 @@ function bind(){
           updateTaskDatesWarning();
         }
       });
+      window.__fpStart = fpStart;
 
     }
 
@@ -5427,6 +5459,7 @@ function bind(){
         onOpen: (_s,_d,inst)=>{ const target = startIso || endIso || todayIso; inst.jumpToDate(target); },
         onChange:()=>{ updateTaskDatesWarning(); }
       });
+      window.__fpEnd = fpEnd;
     }
     updateTaskDatesWarning();
     ["filterStartAfter","filterEndBefore"].forEach(id=>{
@@ -5629,7 +5662,7 @@ function bind(){
 
 
 
-  // Alerte fermeture si modifications non sauvegardées
+  // Alerte fermeture si modifications non sauvegardes
 
   window.addEventListener("beforeunload",(e)=>{
 
@@ -5671,7 +5704,7 @@ window.addEventListener("popstate",(e)=>{
 renderAll();
 
 
-// Préparation impression : cartouche + légende
+// Préparation impression : cartouche + lgende
 
 function preparePrint(opts={}){
 
@@ -5743,7 +5776,7 @@ function preparePrint(opts={}){
 
 
 
-  // Contenu imprimé : selon qu'on est sur le maître ou un projet
+  // Contenu imprim : selon qu'on est sur le maître ou un projet
 
   container.querySelectorAll(".print-dynamic").forEach(n=>n.remove());
 
@@ -5775,7 +5808,7 @@ function preparePrint(opts={}){
 
   }else{
 
-    // Projet : réutiliser l'affichage courant (table tâches + gantt projet)
+    // Projet : rutiliser l'affichage courant (table tâches + gantt projet)
 
     const wrap = document.createElement("div"); wrap.className="print-dynamic";
 
@@ -5789,7 +5822,7 @@ function preparePrint(opts={}){
 
       const clone = projGantt.cloneNode(true);
 
-      // éviter la double légende : on garde celle du cartouche principal
+      // éviter la double lgende : on garde celle du cartouche principal
 
       clone.querySelectorAll("#legend").forEach(n=>n.remove());
 
@@ -5840,10 +5873,10 @@ if(typeof window !== "undefined"){
     if(dated.length){
       const minStart = dated.reduce((a,t)=> !a || new Date(t.start) < new Date(a) ? t.start : a, "");
       const maxEnd = dated.reduce((a,t)=> !a || new Date(t.end) > new Date(a) ? t.end : a, "");
-      range = `Plage: ${formatDate(minStart)} → ${formatDate(maxEnd)}`;
+      range = `Plage: ${formatDate(minStart)}  ${formatDate(maxEnd)}`;
     }
-    const datedPart = dated.length !== total ? ` (datées: ${dated.length})` : "";
-    return `Tâches: ${total}${datedPart} • ${range}`;
+    const datedPart = dated.length !== total ? ` (dates: ${dated.length})` : "";
+    return `Tâches: ${total}${datedPart}  ${range}`;
   }
   window.openExportProjectModal = ()=>{
 

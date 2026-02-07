@@ -91,27 +91,26 @@
     <div class="lock-card">
       <div class="lock-title">Accès restreint</div>
       <form id="lock-form" autocomplete="on" method="post" action="#">
-        <input id="lock-email" class="lock-input" type="email" name="email" placeholder="Email" autocomplete="off" inputmode="email" spellcheck="false" autocapitalize="none" autocorrect="off" list="lock-users" required />
-        <datalist id="lock-users"></datalist>
+        <select id="lock-email" class="lock-input" name="email" required></select>
         <div style="display:flex;align-items:center;gap:8px;">
           <input id="lock-pwd" class="lock-input" type="password" placeholder="Mot de passe" autocomplete="current-password" name="password" required />
-          <button id="lock-pwd-toggle" type="button" title="Afficher / masquer" style="border:1px solid #d1d5db;background:#fff;border-radius:10px;padding:6px 10px;cursor:pointer;"></button>
+          <button id="lock-pwd-toggle" type="button" title="Afficher / masquer" style="border:1px solid #d1d5db;background:#fff;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:16px;line-height:1;">👁</button>
         </div>
         <label style="display:flex;align-items:center;gap:8px;justify-content:flex-start;font-size:12px;color:#475569;margin:4px 0 2px;">
           <input id="lock-remember" type="checkbox" style="width:auto;margin:0;" />
-          Se souvenir de moi (local)
+          Se souvenir de moi
         </label>
-        <div style="font-size:11px;color:#b91c1c;margin:0 0 8px;">Mot de passe mémorisé en clair dans ce navigateur.</div>
+        <div style="font-size:11px;color:#64748b;margin:0 0 8px;">Connexion sécurisée requise.</div>
         <button id="lock-submit" class="lock-btn" type="submit">Entrer</button>
       </form>
-      <div class="lock-msg">Mot de passe requis (local, non sécurisé)</div>
+      <div class="lock-msg">Mot de passe requis</div>
     </div>
   </div>
   <!-- Modal export projet -->
   <div id="exportProjectModal" class="modal hidden" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-title">Export PDF du projet</div>
-      <div class="modal-sub">Choisis le mode d’export :</div>
+      <div class="modal-sub">Choisis le mode dexport :</div>
       <div id="exportProjectSummary" class="modal-sub"></div>
       <div class="modal-actions">
         <button class="btn btn-export-no" id="btnExportNoCharts">Export sans graphiques</button>
@@ -122,7 +121,7 @@
   <div id="exportMasterModal" class="modal hidden" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-title">Export PDF du tableau maître</div>
-      <div class="modal-sub">Choisis le mode d’export :</div>
+      <div class="modal-sub">Choisis le mode dexport :</div>
       <div id="exportMasterSummary" class="modal-sub"></div>
       <div class="modal-actions">
         <button class="btn btn-export-no" id="btnExportMasterNoCharts">Export sans graphiques</button>
@@ -133,7 +132,7 @@
   <div id="configModal" class="modal hidden" aria-hidden="true">
     <div class="modal-card" style="min-width:340px;">
       <div class="modal-title">Configuration</div>
-      <div class="modal-sub">Paramètres du dashboard</div>
+      <div class="modal-sub">Paramtres du dashboard</div>
       <label class="label">Nom du dashboard</label>
       <input class="input" id="cfg_name" placeholder="Nom du dashboard" />
       <label class="label">Adresse HTTP</label>
@@ -158,7 +157,7 @@
         </div>
         <div id="cfg_users_list" class="config-users-list"></div>
       </div>
-      <div class="config-footer">Concepteur : Sébastien DUC <span class="config-copyright">©</span></div>
+      <div class="config-footer">Concepteur : Sébastien DUC <span class="config-copyright"></span></div>
       <div class="modal-actions" style="margin-top:10px;">
         <button class="btn btn-ghost" id="btnConfigClose">Fermer</button>
         <button class="btn btn-primary" id="btnConfigSave">Enregistrer</button>
@@ -168,11 +167,11 @@
   <header class="topbar">
     <div>
       <div class="brand" id="brandTitle">Suivi de Chantiers</div>
-      <div class="subtitle" id="brandSub">Tableau maître • Projets • Gantt • Exports locaux</div>
+      <div class="subtitle" id="brandSub">Tableau maître  Projets  Gantt  Exports locaux</div>
     </div>
     <div class="topbar-user" id="topbarUser"></div>
     <button class="btn btn-ghost" id="btnSwitchUser" style="display:none;">
-      <span class="btn-icon">🔄</span>
+      <span class="btn-icon"></span>
       Changer d'utilisateur
     </button>
     <div class="topbar-lock" id="topbarLock"></div>
@@ -180,7 +179,7 @@
       <button class="btn btn-primary" id="btnSave">Sauvegarder</button>
       <button class="btn" id="btnConfig" style="display:none;">Configuration</button>
       <div class="gear-wrap">
-        <button id="gear-btn" title="Options accès">🔒</button>
+        <button id="gear-btn" title="Options accs"></button>
         <div id="gear-panel">
           <small>Autoriser = déverrouiller. Interdire = verrouiller.</small>
           <div class="gear-actions">
@@ -201,7 +200,7 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="section">
-        <div class="section-title"><span class="section-title-icon">️</span> Onglets</div>
+        <div class="section-title"><span class="section-title-icon"></span> Onglets</div>
         <div id="tabs" class="tabs"></div>
       </div>
 
@@ -218,7 +217,7 @@
 
         <div class="grid2">
           <div>
-            <label class="label">Début après</label>
+            <label class="label">Dbut aprs</label>
             <input class="input" id="filterStartAfter" type="date" placeholder="jj/mm/aaaa" />
           </div>
           <div>
@@ -227,7 +226,7 @@
           </div>
         </div>
         <div class="row">
-          <button class="btn btn-ghost" onclick="document.getElementById('filterProject').value='';document.getElementById('filterStatus').value='';document.getElementById('filterSearch').value='';document.getElementById('filterStartAfter').value='';document.getElementById('filterEndBefore').value='';renderAll();">Réinitialiser</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('filterProject').value='';document.getElementById('filterStatus').value='';document.getElementById('filterSearch').value='';document.getElementById('filterStartAfter').value='';document.getElementById('filterEndBefore').value='';renderAll();">Rinitialiser</button>
         </div>
       </div>
 
@@ -257,7 +256,7 @@
         <div id="kpis" class="kpis"></div>
         <div class="panel-controls" style="margin-bottom:6px;">
           <span class="filters-indicator" id="filtersBadge">Tri/filtre actif</span>
-          <button class="btn btn-ghost" id="btnResetSortMaster">Réinitialiser tri</button>
+          <button class="btn btn-ghost" id="btnResetSortMaster">Rinitialiser tri</button>
         </div>
         <div class="tablewrap">
           <table class="table" id="masterTable">
@@ -265,9 +264,9 @@
                 <tr>
                 <th data-sort="site">Site</th>
                 <th data-sort="project">Projet</th>
-                <th data-sort="task">Tâche</th>
+                <th data-sort="task">Tche</th>
                 <th data-sort="status">Statut</th>
-                <th data-sort="start">Début</th>
+                <th data-sort="start">Dbut</th>
                 <th data-sort="end">Fin</th>
                 <th data-sort="owner">Responsable</th>
                 <th data-sort="duration">Durée (jours)</th>
@@ -277,7 +276,7 @@
           </table>
         </div>
         <div class="card" style="margin-top:12px;">
-          <div class="card-title">Gantt global (toutes tâches datées)</div>
+          <div class="card-title">Gantt global (toutes tâches dates)</div>
           <div class="row" style="gap:6px;align-items:center;margin-top:4px;">
             <button class="btn btn-ghost" id="btnToggleMasterVendor">Prestataire</button>
             <button class="btn btn-ghost" id="btnToggleMasterStatus">Statut</button>
@@ -292,9 +291,9 @@
               <label class="label" style="margin-top:0;">Filtre</label>
               <select class="input" id="workloadRangeType" style="width:140px;">
                 <option value="all">Tout</option>
-                <option value="custom">Période</option>
-                <option value="school">Année scolaire</option>
-                <option value="civil">Année civile</option>
+                <option value="custom">Priode</option>
+                <option value="school">Anne scolaire</option>
+                <option value="civil">Anne civile</option>
               </select>
               <select class="input" id="workloadRangeYear" style="width:110px;"></select>
               <input class="input" id="workloadRangeStart" type="date" style="width:140px;" />
@@ -320,8 +319,8 @@
       <section class="panel hidden" id="viewProject">
         <div class="panel-head">
           <div>
-            <div class="panel-title" id="projectTitle"><span class="panel-title-icon">️</span> Projet</div>
-            <div class="panel-sub" id="projectSub">Détails  Gantt</div>
+            <div class="panel-title" id="projectTitle"><span class="panel-title-icon"></span> Projet</div>
+            <div class="panel-sub" id="projectSub">Détails • Gantt</div>
             <div class="panel-metrics" id="projectMetrics"></div>
             <div class="panel-live" id="projectLive"></div>
           </div>
@@ -337,12 +336,12 @@
             <label class="label">Nom</label>
             <input class="input" id="p_name" />
             <label class="label">Sous-projet</label>
-            <input class="input" id="p_subproject" placeholder="ex: Phase 1, Bâtiment B, tages 2-3" />
+            <input class="input" id="p_subproject" placeholder="ex: Phase 1, Btiment B, tages 2-3" />
             <label class="label">Site / Zone</label>
             <select class="input" id="p_site"></select>
-            <label class="label">Contraintes clés</label>
+            <label class="label">Contraintes cls</label>
             <input class="input" id="p_constraints" />
-              <!-- Dates de contraintes retirées -->
+              <!-- Dates de contraintes retires -->
             <div class="row">
               <button class="btn btn-primary" id="btnSaveProject">Enregistrer projet</button>
               <button class="btn btn-danger" id="btnDeleteProject">Supprimer projet</button>
@@ -350,40 +349,41 @@
           </div>
 
           <div class="card">
-            <div class="card-title"><span class="card-title-icon">️</span> Édition tâche <span class="num-badge" id="t_num_badge" style="margin-left:8px; display:none;"></span></div>
+            <div class="card-title"><span class="card-title-icon"></span> Édition tâche <span class="num-badge" id="t_num_badge" style="margin-left:8px; display:none;"></span></div>
             <div id="descOverlay" class="desc-overlay"></div>
             <label class="label">Description</label>
             <div class="desc-wrap">
-              <input class="input" id="t_room" placeholder="ex: Chambre 11, Local élec, Couloir A" autocomplete="off" aria-label="Description" />
-              <button type="button" class="btn icon-btn desc-manage-btn" id="btnManageDescriptions" aria-label="Gérer les descriptions">️</button>
+              <input class="input" id="t_room" placeholder="ex: Chambre 11, Local lec, Couloir A" autocomplete="off" aria-label="Description" />
+              <button type="button" class="btn icon-btn desc-manage-btn" id="btnManageDescriptions" aria-label="Grer les descriptions"></button>
               <div id="descDropdown" class="desc-dropdown" role="listbox" aria-label="Suggestions description" style="display:none"></div>
               <div id="descManagerPanel" class="vendor-panel" style="display:none"></div>
             </div>
 
-            <label class="label">Statuts / Corps d'état (multi-sélection)</label>
+            <label class="label">Statuts / Corps d'état (multi-slection)</label>
             <div class="multiselect" id="t_status_wrap">
               <div class="multiselect-display" id="t_status_display">Sélectionner</div>
               <div class="multiselect-menu hidden" id="t_status_menu"></div>
             </div>
 
-            <label class="label">Intervenants (équipe interne / prestataire externe)</label>
+            <label class="label">Intervenants (Équipe interne / prestataire externe)</label>
             <select class="input" id="t_owner">
               <option value=""> Choisir </option>
-              <option value="quipe interne">quipe interne</option>
+              <option value="Équipe interne">Équipe interne</option>
+              <option value="RSG/RI">RSG/RI</option>
               <option value="Prestataire externe">Prestataire externe</option>
             </select>
 
             <label class="label">Prestataire externe</label>
             <div class="vendor-wrap">
-              <input class="input" id="t_vendor" placeholder="Nom du prestataire (trié AZ)" autocomplete="off" aria-label="Prestataire externe" />
-              <button type="button" class="btn icon-btn vendor-manage-btn" id="btnManageVendors" aria-label="Gérer les prestataires">️</button>
+              <input class="input" id="t_vendor" placeholder="Nom du prestataire (tri AZ)" autocomplete="off" aria-label="Prestataire externe" />
+              <button type="button" class="btn icon-btn vendor-manage-btn" id="btnManageVendors" aria-label="Grer les prestataires"></button>
               <div id="vendorDropdown" class="vendor-dropdown" role="listbox" aria-label="Suggestions prestataire" style="display:none"></div>
               <div id="vendorManagerPanel" class="vendor-panel" style="display:none"></div>
             </div>
 
             <div class="grid2">
               <div>
-                <label class="label">Début</label>
+                <label class="label">Dbut</label>
                 <input class="input" id="t_start" type="date" placeholder="jj/mm/aaaa" />
               </div>
               <div>
@@ -405,16 +405,16 @@
           <div class="card-title"><span class="card-title-icon"></span> Tâches du projet</div>
           <div class="panel-controls">
             <span class="filters-indicator" id="projectFiltersBadge">Tri/filtre actif</span>
-            <button class="btn btn-ghost" id="btnResetSortProject">Réinitialiser tri</button>
+            <button class="btn btn-ghost" id="btnResetSortProject">Rinitialiser tri</button>
           </div>
           <div class="tablewrap">
             <table class="table" id="projectTasksTable">
               <thead>
                 <tr>
-                  <th style="width:120px" data-sort="num">N°</th>
+                  <th style="width:120px" data-sort="num">N</th>
                   <th data-sort="task">Description</th>
                   <th data-sort="status">Statuts</th>
-                  <th data-sort="start">Début</th>
+                  <th data-sort="start">Dbut</th>
                   <th data-sort="end">Fin</th>
                   <th data-sort="duration">Durée (jours)</th>
                 </tr>
@@ -440,9 +440,9 @@
               <label class="label" style="margin-top:0;">Filtre</label>
               <select class="input" id="workloadRangeTypeProject" style="width:140px;">
                 <option value="all">Tout</option>
-                <option value="custom">Période</option>
-                <option value="school">Année scolaire</option>
-                <option value="civil">Année civile</option>
+                <option value="custom">Priode</option>
+                <option value="school">Anne scolaire</option>
+                <option value="civil">Anne civile</option>
               </select>
               <select class="input" id="workloadRangeYearProject" style="width:110px;"></select>
               <input class="input" id="workloadRangeStartProject" type="date" style="width:140px;" />
@@ -481,7 +481,7 @@
   const USERS_KEY = "dashboard_users_v1";
   const lock = document.getElementById("lockscreen");
   const userInput = document.getElementById("lock-email");
-  const userList = document.getElementById("lock-users");
+  const userList = document.getElementById("lock-email");
   const form = document.getElementById("lock-form");
   const pwd  = document.getElementById("lock-pwd");
   const pwdToggle = document.getElementById("lock-pwd-toggle");
@@ -507,30 +507,81 @@
     }catch(e){ return []; }
   }
   function rememberSave(email, pass){
-    try{ localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, pass })); }catch(e){}
+    try{
+      const raw = localStorage.getItem(REMEMBER_KEY);
+      let data = raw ? JSON.parse(raw) : {};
+      if(!data || typeof data !== "object") data = {};
+      if(!data.byEmail) data.byEmail = {};
+      data.byEmail[email] = pass || "";
+      data.lastEmail = email;
+      localStorage.setItem(REMEMBER_KEY, JSON.stringify(data));
+    }catch(e){}
   }
-  function rememberClear(){
-    try{ localStorage.removeItem(REMEMBER_KEY); }catch(e){}
+  function rememberClear(email){
+    try{
+      const raw = localStorage.getItem(REMEMBER_KEY);
+      if(!raw){ return; }
+      const data = JSON.parse(raw);
+      if(!data || typeof data !== "object"){ localStorage.removeItem(REMEMBER_KEY); return; }
+      if(email){
+        if(data.byEmail) delete data.byEmail[email];
+        if(data.lastEmail === email) data.lastEmail = "";
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify(data));
+      }else{
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+    }catch(e){}
   }
   function populateUsers(){
     const users = loadUsers();
     if(!userList) return;
     const seen = new Set();
     const items = [];
+    let changed = false;
     users.forEach(u=>{
-      const email = (u.email||"").trim().toLowerCase();
-      if(!email || seen.has(email)) return;
+      let email = (u.email||"").trim().toLowerCase();
+      if(!email){
+        const base = (u.name||"utilisateur").toLowerCase().replace(/\s+/g,".").replace(/[^a-z0-9._-]/g,"");
+        email = `${base || "user"}@local`;
+        u.email = email;
+        changed = true;
+      }
+      if(seen.has(email)) return;
       seen.add(email);
       const label = `${u.name||""} (${email||"sans email"})`;
-      items.push(`<option value="${email}" label="${label}"></option>`);
+      items.push({ email, label });
     });
-    userList.innerHTML = items.join("");
+    if(changed){
+      try{ localStorage.setItem(USERS_KEY, JSON.stringify(users)); }catch(e){}
+    }
+    items.sort((a,b)=>a.label.localeCompare(b.label,"fr"));
+    userList.innerHTML = items.map(it=>`<option value="${it.email}">${it.label}</option>`).join("");
     const last = localStorage.getItem("last_login_email") || "";
     if(last && userInput){
       userInput.value = last.toLowerCase();
     }
+    // auto-fill mdp si mémorisé pour cet email
+    try{
+      const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || "null");
+      const mail = (userInput?.value || "").trim().toLowerCase();
+      if(remembered?.byEmail && mail && remembered.byEmail[mail] !== undefined){
+        if(pwd) pwd.value = remembered.byEmail[mail] || "";
+        if(remember) remember.checked = true;
+      }
+    }catch(e){}
   }
   window.populateLoginUsers = populateUsers;
+  async function refreshLoginUsers(){
+    try{
+      const localUsers = loadUsers();
+      const shouldSync = !localUsers || localUsers.length === 0;
+      if(shouldSync && window.forceLoadUsersFromSupabase){
+        await window.forceLoadUsersFromSupabase();
+      }
+    }catch(e){}
+    populateUsers();
+  }
+  window.refreshLoginUsers = refreshLoginUsers;
   function ensureDefaultAdmin(){
     const users = loadUsers();
     if(users.length===0){
@@ -539,7 +590,15 @@
   }
   async function tryUnlockWithHash(h, mail){
     const users = loadUsers();
-    const u = users.find(x=>`sha256:${x.hash}`===h && (x.email||"").toLowerCase()===mail);
+    const u = users.find(x=>{
+      const email = (x.email||"").toLowerCase();
+      const hashes = [x.hash, x.remember_hash].filter(Boolean).map(v=>(v||"").toLowerCase());
+      const match = hashes.some(hx=>{
+        const hashFull = hx.startsWith("sha256:") ? hx : `sha256:${hx}`;
+        return h===hashFull || h===hx || h.replace("sha256:","")===hx;
+      });
+      return email===mail && match;
+    });
     if(u){
       sessionStorage.setItem("unlocked","1");
       sessionStorage.setItem("current_user", u.name||"");
@@ -547,6 +606,7 @@
       localStorage.setItem("last_login_email", mail);
       lock.classList.add("hidden");
       if(window.setLockState) window.setLockState(u.role === "admin" ? false : true);
+      if(window.updateRoleUI) window.updateRoleUI();
       return u;
     }
     return null;
@@ -554,15 +614,16 @@
   async function tryUnlock(){
     ensureDefaultAdmin();
     populateUsers();
-    const h = await hash(pwd.value||"");
+    const pass = (pwd.value || "").trim();
+    const h = await hash(pass);
     const mail = (userInput?.value||"").trim().toLowerCase();
     if(!mail){ alert("Email requis"); return; }
     const u = await tryUnlockWithHash(h, mail);
     if(u){
       if(remember?.checked){
-        rememberSave(mail, pwd.value||"");
+        rememberSave(mail, pass||"");
       }else{
-        rememberClear();
+        rememberClear(mail);
       }
       return true;
     }else{
@@ -606,6 +667,7 @@
     if(pwd) pwd.value = "";
     lock.classList.remove("hidden"); // raffiche immdiatement
     if(window.setLockState) window.setLockState(true);
+    if(window.updateRoleUI) window.updateRoleUI();
   };
   btn.onclick = (e)=>{ e.preventDefault(); tryUnlock(); };
   if(form){
@@ -622,18 +684,28 @@
     }
   });
   if(userInput){
-    userInput.addEventListener("blur", ()=>{
+    userInput.addEventListener("change", ()=>{
       if(userInput.value) userInput.value = userInput.value.trim().toLowerCase();
+      try{
+        const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || "null");
+        const mail = (userInput?.value || "").trim().toLowerCase();
+        if(remembered?.byEmail && mail && remembered.byEmail[mail] !== undefined){
+          if(pwd) pwd.value = remembered.byEmail[mail] || "";
+          if(remember) remember.checked = true;
+        }else{
+          if(pwd) pwd.value = "";
+          if(remember) remember.checked = false;
+        }
+      }catch(e){}
     });
   }
   if(remember){
     remember.addEventListener("change", ()=>{
+      const mail = (userInput?.value || "").trim().toLowerCase();
       if(remember.checked){
-        if(userInput?.value){
-          rememberSave(userInput.value.trim().toLowerCase(), pwd.value||"");
-        }
+        if(mail){ rememberSave(mail, pwd.value||""); }
       }else{
-        rememberClear();
+        if(mail){ rememberClear(mail); }
       }
     });
   }
@@ -642,29 +714,33 @@
       if(!pwd) return;
       const isPass = pwd.type === "password";
       pwd.type = isPass ? "text" : "password";
+      pwdToggle.textContent = isPass ? "🙈" : "👁";
     });
   }
 
   // toujours verrouill au chargement (sauf auto-login volontaire)
   ensureDefaultAdmin();
-  populateUsers();
+  refreshLoginUsers();
   sessionStorage.removeItem("unlocked");
   sessionStorage.removeItem("current_user");
   sessionStorage.removeItem("current_role");
   if(window.setLockState) window.setLockState(true);
-  // remember me (local) : pr-remplissage email + mot de passe
+  // remember me : pré-remplissage email + mot de passe
   try{
     const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || "null");
-    if(remembered?.email){
-      if(userInput) userInput.value = remembered.email;
-      if(pwd && remembered?.pass) pwd.value = remembered.pass;
-      if(remember) remember.checked = true;
+    const last = (remembered?.lastEmail || localStorage.getItem("last_login_email") || "").trim().toLowerCase();
+    if(last){
+      if(userInput) userInput.value = last;
+      if(remembered?.byEmail && remembered.byEmail[last] !== undefined && pwd){
+        pwd.value = remembered.byEmail[last] || "";
+        if(remember) remember.checked = true;
+      }
     }
   }catch(e){}
 })();
 </script>
 
-  <!-- Bloc imprimable (cartouche + légende) injecté en JS -->
+  <!-- Bloc imprimable (cartouche + lgende) inject en JS -->
   <template id="printTemplate">
     <div class="print-order">
       <div class="print-header print-block" id="printHeader">
