@@ -217,7 +217,7 @@
 
         <div class="grid2">
           <div>
-            <label class="label">Dbut aprs</label>
+            <label class="label">Début après</label>
             <input class="input" id="filterStartAfter" type="date" placeholder="jj/mm/aaaa" />
           </div>
           <div>
@@ -226,7 +226,7 @@
           </div>
         </div>
         <div class="row">
-          <button class="btn btn-ghost" onclick="document.getElementById('filterProject').value='';document.getElementById('filterStatus').value='';document.getElementById('filterSearch').value='';document.getElementById('filterStartAfter').value='';document.getElementById('filterEndBefore').value='';renderAll();">Rinitialiser</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('filterProject').value='';document.getElementById('filterStatus').value='';document.getElementById('filterSearch').value='';document.getElementById('filterStartAfter').value='';document.getElementById('filterEndBefore').value='';renderAll();">Réinitialiser</button>
         </div>
       </div>
 
@@ -256,7 +256,8 @@
         <div id="kpis" class="kpis"></div>
         <div class="panel-controls" style="margin-bottom:6px;">
           <span class="filters-indicator" id="filtersBadge">Tri/filtre actif</span>
-          <button class="btn btn-ghost" id="btnResetSortMaster">Rinitialiser tri</button>
+          <span class="filters-indicator site-indicator" id="siteBadge" style="display:none;"></span>
+          <button class="btn btn-ghost" id="btnResetSortMaster">Réinitialiser tri</button>
         </div>
         <div class="tablewrap">
           <table class="table" id="masterTable">
@@ -264,9 +265,9 @@
                 <tr>
                 <th data-sort="site">Site</th>
                 <th data-sort="project">Projet</th>
-                <th data-sort="task">Tche</th>
+                <th data-sort="task">Tâche</th>
                 <th data-sort="status">Statut</th>
-                <th data-sort="start">Dbut</th>
+                <th data-sort="start">Début</th>
                 <th data-sort="end">Fin</th>
                 <th data-sort="owner">Responsable</th>
                 <th data-sort="duration">Durée (jours)</th>
@@ -321,6 +322,7 @@
           <div>
             <div class="panel-title" id="projectTitle"><span class="panel-title-icon"></span> Projet</div>
             <div class="panel-sub" id="projectSub">Détails • Gantt</div>
+            <div class="panel-summary" id="projectSummary"></div>
             <div class="panel-metrics" id="projectMetrics"></div>
             <div class="panel-live" id="projectLive"></div>
           </div>
@@ -331,20 +333,22 @@
         </div>
 
         <div class="grid2">
-          <div class="card">
+          <div class="card project-info-card">
             <div class="card-title"><span class="card-title-icon"></span> Infos projet</div>
             <label class="label">Nom</label>
             <input class="input" id="p_name" />
             <label class="label">Sous-projet</label>
-            <input class="input" id="p_subproject" placeholder="ex: Phase 1, Btiment B, tages 2-3" />
+            <input class="input" id="p_subproject" placeholder="ex: Phase 1, Bâtiment B, étages 2-3" />
             <label class="label">Site / Zone</label>
             <select class="input" id="p_site"></select>
-            <label class="label">Contraintes cls</label>
-            <input class="input" id="p_constraints" />
               <!-- Dates de contraintes retires -->
             <div class="row">
               <button class="btn btn-primary" id="btnSaveProject">Enregistrer projet</button>
               <button class="btn btn-danger" id="btnDeleteProject">Supprimer projet</button>
+            </div>
+            <div class="site-photo-wrap site-photo-corner">
+              <img id="sitePhoto" alt="Photo du site" loading="lazy" />
+              <div id="sitePhotoEmpty">Photo du site non définie</div>
             </div>
           </div>
 
@@ -383,7 +387,7 @@
 
             <div class="grid2">
               <div>
-                <label class="label">Dbut</label>
+                <label class="label">Début</label>
                 <input class="input" id="t_start" type="date" placeholder="jj/mm/aaaa" />
               </div>
               <div>
@@ -405,16 +409,16 @@
           <div class="card-title"><span class="card-title-icon"></span> Tâches du projet</div>
           <div class="panel-controls">
             <span class="filters-indicator" id="projectFiltersBadge">Tri/filtre actif</span>
-            <button class="btn btn-ghost" id="btnResetSortProject">Rinitialiser tri</button>
+            <button class="btn btn-ghost" id="btnResetSortProject">Réinitialiser tri</button>
           </div>
-          <div class="tablewrap">
+          <div class="tablewrap project-tasks">
             <table class="table" id="projectTasksTable">
               <thead>
                 <tr>
                   <th style="width:120px" data-sort="num">N</th>
                   <th data-sort="task">Description</th>
                   <th data-sort="status">Statuts</th>
-                  <th data-sort="start">Dbut</th>
+                  <th data-sort="start">Début</th>
                   <th data-sort="end">Fin</th>
                   <th data-sort="duration">Durée (jours)</th>
                 </tr>
@@ -477,6 +481,7 @@
 <script>
 // Pseudo-login (dissuasif uniquement)
 (function(){
+  const DISABLE_LOGIN = true; // TEMP: désactive le login (à réactiver plus tard)
   const HASH = "sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; // SHA-256 du mot de passe "admin"
   const USERS_KEY = "dashboard_users_v1";
   const lock = document.getElementById("lockscreen");
@@ -725,6 +730,16 @@
   sessionStorage.removeItem("current_user");
   sessionStorage.removeItem("current_role");
   if(window.setLockState) window.setLockState(true);
+
+  if(DISABLE_LOGIN){
+    sessionStorage.setItem("unlocked","1");
+    sessionStorage.setItem("current_user","Sébastien DUC");
+    sessionStorage.setItem("current_role","admin");
+    lock.classList.add("hidden");
+    if(window.setLockState) window.setLockState(false);
+    if(window.updateRoleUI) window.updateRoleUI();
+    return;
+  }
   // remember me : pré-remplissage email + mot de passe
   try{
     const remembered = JSON.parse(localStorage.getItem(REMEMBER_KEY) || "null");

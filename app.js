@@ -350,9 +350,9 @@ let taskOrderMap = {};
 
 let selectedStatusSet = new Set();
 
-let sortMaster = {key:"project", dir:"asc"};
+let sortMaster = {key:"start", dir:"asc"};
 
-let sortProject = {key:"num", dir:"asc"};
+let sortProject = {key:"start", dir:"asc"};
 
 let unsavedChanges = false;
 
@@ -432,7 +432,7 @@ const STATUS_COLORS = {
 
   ELECTRICITE:      "#d97706",
 
-  PEINTURE:         "#1d4ed8",
+  PEINTURE:         "#2563eb",
 
   SOL:              "#0f766e",
 
@@ -442,21 +442,23 @@ const STATUS_COLORS = {
 
   AMENAGEMENTS:     "#db2777",
 
-  MOBILIER:         "#334155",
+  MOBILIER:         "#9333ea",
 
   PLOMBERIE:        "#15803d",
 
-  PREPARATION:      "#475569",
+  PREPARATION:      "#16a34a",
 
   TDV:              "#f97316",
 
   MACONNERIE:       "#a16207",
 
-  HUIS_SER:         "#4b5563",
+  HUIS_SER:         "#6b7280",
 
   RESEAUX:          "#0ea5b0",
 
   TOITURE:          "#0d9488",
+
+  ETUDE:            "#0284c7",
 
 };
 
@@ -485,35 +487,29 @@ function updateTopbarHeight(){
 }
 
 function updateSidebarTop(){
-  const main = document.querySelector(".main");
-  if(!main) return;
-  if(typeof window.__sidebarTopLocked !== "number"){
-    // verrouille seulement quand la mise en page est stable
-    if(!window.__sidebarCanLock) return;
-    const rect = main.getBoundingClientRect();
-    window.__sidebarTopLocked = Math.max(0, Math.round(rect.top));
-  }
-  document.documentElement.style.setProperty("--sidebar-top", `${window.__sidebarTopLocked}px`);
+  const tb = document.querySelector(".topbar");
+  if(!tb) return;
+  const top = Math.max(0, tb.offsetHeight + 14);
+  window.__sidebarTopLocked = top;
+  document.documentElement.style.setProperty("--sidebar-top", `${top}px`);
+}
+function updateSidebarScrollState(){
+  const sb = document.querySelector(".sidebar");
+  if(!sb) return;
+  const needsScroll = sb.scrollHeight > sb.clientHeight + 2;
+  sb.classList.toggle("sidebar-scroll", needsScroll);
 }
 
 // verrouille la position de la sidebar une fois la mise en page stabilise
 function _lockSidebarAfterLayout(){
-  if(window.__sidebarTopLocked) return;
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      window.__sidebarCanLock = true;
-      updateSidebarTop();
-      applySidebarTopLock();
-    });
-  });
+  updateSidebarTop();
+  updateSidebarScrollState();
+  applySidebarTopLock();
 }
 window.addEventListener("load", _lockSidebarAfterLayout);
 function applySidebarTopLock(){
-
   if(typeof window.__sidebarTopLocked !== "number") return;
-
   document.documentElement.style.setProperty("--sidebar-top", `${window.__sidebarTopLocked}px`);
-
 }
 
 function updateTaskDatesWarning(){
@@ -675,7 +671,7 @@ function updateRoleUI(){
   if(topUser){
     const name = sessionStorage.getItem("current_user") || "Invit";
     const roleLabel = role==="admin" ? "Admin" : "Utilisateur";
-    topUser.textContent = `Utilisateur connect: ${name} - ${roleLabel}`;
+    topUser.textContent = `Utilisateur connecté: ${name} - ${roleLabel}`;
   }
 }
 async function hashPassword(str){
@@ -978,6 +974,46 @@ const ownerBadge = (o="")=>{
 
   return `<span class="badge owner" style="background:${color};border-color:${color};color:#fff;">${o}</span>`;
 
+};
+
+const SITE_PHOTOS = {
+  "CDM": "assets/sites/CDM.jpg",
+  "LGT": "assets/sites/LGT.jpg",
+  "COLLÈGE": "assets/sites/College.jpg",
+  "COLLEGE": "assets/sites/College.jpg",
+  "ÉCOLE": "assets/sites/Ecole.jpg",
+  "ECOLE": "assets/sites/Ecole.jpg",
+  "NDC": "assets/sites/NDC.jpg"
+};
+
+function updateSitePhoto(site){
+  const img = el("sitePhoto");
+  const empty = el("sitePhotoEmpty");
+  if(!img || !empty) return;
+  const key = (site||"").trim().toUpperCase();
+  const src = SITE_PHOTOS[key];
+  if(!src){
+    img.src = "";
+    img.style.display = "none";
+    empty.style.display = "block";
+    return;
+  }
+  img.onerror = () => {
+    img.style.display = "none";
+    empty.style.display = "block";
+  };
+  img.onload = () => {
+    img.style.display = "block";
+    empty.style.display = "none";
+  };
+  img.src = src;
+}
+const ownerColor = (o="")=>{
+  const typ = ownerType(o);
+  if(typ === "interne") return "#16a34a";
+  if(typ === "externe") return "#b45309";
+  if(typ === "rsgri") return "#2563eb";
+  return "#4b5563";
 };
 
 
@@ -3002,7 +3038,7 @@ function renderGantt(projectId){
 
   let html="<div class='tablewrap gantt-table'><table class='table' style='--gcol1:200px;--gcol2:120px;--gcol3:70px'>";
 
-  html+="<thead><tr><th class='gantt-task-col-project gantt-col-task'>Tche</th><th class='gantt-col-vendor' style='width:120px'>Prestataire</th><th class='gantt-col-status' style='width:70px'>Statut</th>";
+  html+="<thead><tr><th class='gantt-task-col-project gantt-col-task'>Tâche</th><th class='gantt-col-vendor' style='width:120px'>Prestataire</th><th class='gantt-col-status' style='width:70px'>Statut</th>";
 
   weeks.forEach(w=>{
 
@@ -3034,7 +3070,7 @@ function renderGantt(projectId){
 
     const mainStatus = statuses[0] || "";
 
-    const color = STATUS_COLORS[mainStatus] || "#1f2937";
+    const color = ownerColor(t.owner);
 
     const ownerBadges = t.owner ? ownerBadge(t.owner) : "";
 
@@ -3059,8 +3095,12 @@ function renderGantt(projectId){
 
 
 
+    const todayKey = new Date().toISOString().slice(0,10);
+    const isToday = !!(t.start && t.end && t.start<=todayKey && t.end>=todayKey);
+    const isLate = !!(t.end && t.end < todayKey);
     const rowClass = t.id===selectedTaskId ? "gantt-row gantt-row-active" : "gantt-row";
-    html+=`<tr class="${rowClass}" data-task="${t.id}" onclick="openTaskFromGantt('${t.id}')">`;
+    const rowClassWithToday = `${rowClass}${isToday ? " today-row" : ""}${isLate ? " late-row" : ""}`;
+    html+=`<tr class="${rowClassWithToday}" data-task="${t.id}" onclick="openTaskFromGantt('${t.id}')">`;
     const p = state?.projects?.find(x=>x.id===t.projectId);
 
     const sub = (p?.subproject || "").trim();
@@ -3187,14 +3227,18 @@ function renderProjectTasks(projectId){
 
     const statuses = parseStatuses(t.status).map(v=>v.toUpperCase());
 
-    const c = STATUS_COLORS[statuses[0]] || "#1f2937";
+    const c = ownerColor(t.owner);
 
     const ownerBadgeHtml = t.owner ? ownerBadge(t.owner) : "";
     const typ = ownerType(t.owner);
     const durDays = durationDays(t.start,t.end);
     const durLabel = typ === "rsgri" ? `${durDays} j (${durDays*2} h)` : `${durDays} j`;
+    const todayKey = new Date().toISOString().slice(0,10);
+    const isToday = !!(t.start && t.end && t.start<=todayKey && t.end>=todayKey);
+    const isLate = !!(t.end && t.end < todayKey);
+    const rowClass = `${isToday ? "today-row " : ""}${isLate ? "late-row" : ""}`.trim();
 
-    h+=`<tr data-task="${t.id}">
+    h+=`<tr class="${rowClass}" data-task="${t.id}">
 
       <td><span class="num-badge" style="--badge-color:${c};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span></td>
 
@@ -3202,7 +3246,7 @@ function renderProjectTasks(projectId){
 
       <td class="status-cell"><span class="status-left">${statusDot(statuses[0])}${statusLabels(t.status||"")}</span>${ownerBadgeHtml||""}</td>
 
-      <td>${formatDate(t.start)||""}</td>
+      <td>${formatDate(t.start)||""}${isToday ? `<span class="today-dot" title="En cours aujourd'hui"></span>` : ""}</td>
 
       <td>${formatDate(t.end)||""}</td>
 
@@ -3226,7 +3270,7 @@ function renderProjectTasks(projectId){
 
   if(pf){
 
-    const active = (sortProject.key!=="num" || sortProject.dir!=="asc");
+    const active = (sortProject.key!=="start" || sortProject.dir!=="asc");
 
     updateBadge(pf, active, "Tri/filtre actif", "Tri par défaut");
 
@@ -3282,7 +3326,7 @@ function renderMasterGantt(){
 
   let html="<div class='tablewrap gantt-table'><table class='table' style='--gcol1:150px;--gcol2:140px;--gcol3:90px'>";
 
-  html+="<thead><tr><th class='gantt-col-task' style='width:150px'>Tche</th><th class='gantt-col-vendor' style='width:140px'>Prestataire</th><th class='gantt-col-status' style='width:90px'>Statut</th>";
+  html+="<thead><tr><th class='gantt-col-task' style='width:150px'>Tâche</th><th class='gantt-col-vendor' style='width:140px'>Prestataire</th><th class='gantt-col-status' style='width:90px'>Statut</th>";
 
   weeks.forEach(w=>{
 
@@ -3312,7 +3356,7 @@ function renderMasterGantt(){
 
     const mainStatus = statuses[0] || "";
 
-    const color = STATUS_COLORS[mainStatus] || "#1f2937";
+    const color = ownerColor(t.owner);
 
     const p = state?.projects?.find(x=>x.id===t.projectId);
 
@@ -3339,8 +3383,12 @@ function renderMasterGantt(){
 
 
 
+    const todayKey = new Date().toISOString().slice(0,10);
+    const isToday = !!(t.start && t.end && t.start<=todayKey && t.end>=todayKey);
+    const isLate = !!(t.end && t.end < todayKey);
     const rowClass = t.id===selectedTaskId ? "gantt-row gantt-row-active" : "gantt-row";
-    html+=`<tr class="${rowClass}" data-task="${t.id}" onclick="openTaskFromGantt('${t.id}')">`;
+    const rowClassWithToday = `${rowClass}${isToday ? " today-row" : ""}${isLate ? " late-row" : ""}`;
+    html+=`<tr class="${rowClassWithToday}" data-task="${t.id}" onclick="openTaskFromGantt('${t.id}')">`;
     html+=`<td class="gantt-col-task"><span class="num-badge" style="--badge-color:${color};--badge-text:#fff;">${taskOrderMap[t.id]||""}</span> <span class="gantt-task-name">${attrEscape(projectName)}</span></td>`;
 
     html+=`<td class="gantt-vendor-cell gantt-col-vendor"><div class="vendor-stack">${vendorBadges}</div></td>`;
@@ -4014,10 +4062,12 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
 
       if(segments.length === 1){
         const s = segments[0];
+        const labelPos = polar(cx, cy, r * 1.12, 90);
         pieMarkup += `
           <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${s.grad})"></circle>
-          <text class="wl-axis" x="${cx}" y="${cy}" text-anchor="middle">${s.pct}%</text>
-          <text class="wl-value" x="${cx}" y="${cy + 14}" text-anchor="middle">${s.value} j</text>
+          <line x1="${cx}" y1="${cy - r * 0.95}" x2="${cx}" y2="${cy - r * 1.06}" stroke="#94a3b8" stroke-width="1" />
+          <text class="wl-axis" x="${labelPos.x}" y="${labelPos.y}" text-anchor="middle">${s.pct}%</text>
+          <text class="wl-value" x="${labelPos.x}" y="${labelPos.y + 14}" text-anchor="middle">${s.value} j</text>
         `;
       }else{
         let cursor = 0;
@@ -4028,11 +4078,14 @@ function renderWorkloadChartFor(tasks, chartId, pieId, uiIds=null, stateRef=null
           const midA = startA + angle / 2;
           const off = polar(0,0,gap,midA);
           const path = arcPath(cx+off.x, cy+off.y, r, startA, endA);
-          const labelPos = polar(cx+off.x, cy+off.y, r*0.62, midA);
+          const innerPos = polar(cx+off.x, cy+off.y, r*0.95, midA);
+          const outerPos = polar(cx+off.x, cy+off.y, r*1.12, midA);
+          const anchor = outerPos.x < cx ? "end" : "start";
           pieMarkup += `
             <path d="${path}" fill="url(#${seg.grad})"></path>
-            <text class="wl-axis" x="${labelPos.x}" y="${labelPos.y}" text-anchor="middle">${seg.pct}%</text>
-            <text class="wl-value" x="${labelPos.x}" y="${labelPos.y + 14}" text-anchor="middle">${seg.value} j</text>
+            <line x1="${innerPos.x}" y1="${innerPos.y}" x2="${outerPos.x}" y2="${outerPos.y}" stroke="#94a3b8" stroke-width="1" />
+            <text class="wl-axis" x="${outerPos.x}" y="${outerPos.y}" text-anchor="${anchor}">${seg.pct}%</text>
+            <text class="wl-value" x="${outerPos.x}" y="${outerPos.y + 14}" text-anchor="${anchor}">${seg.value} j</text>
           `;
           cursor = endA;
         });
@@ -4113,7 +4166,7 @@ function renderTabs(){
 
   };
 
-  let h=`<button class="tab ${selectedProjectId?"":"active"}" data-tab="MASTER"><span class="tab-icon"></span> Tableau maître</button>`;
+  let h=`<button class="tab tab-master ${selectedProjectId?"":"active"}" data-tab="MASTER"><span class="tab-icon"></span> Tableau maître</button>`;
 
   const projectsSorted = [...state.projects].sort((a,b)=>{
 
@@ -4482,7 +4535,7 @@ function renderMaster(){
 
     if(inProgress.length===0){
 
-      masterLive.innerHTML = `<span class="live-title">Projet non démarr</span>`;
+      masterLive.innerHTML = `<span class="live-title">Projet non démarré</span>`;
 
     }else{
 
@@ -4492,7 +4545,7 @@ function renderMaster(){
 
         const status = parseStatuses(t.status)[0] || "";
 
-        const color = STATUS_COLORS[(status||"").toUpperCase()] || "#475569";
+        const color = ownerColor(t.owner);
 
         const label = STATUSES.find(s=>s.v===status)?.label || status || "En cours";
 
@@ -4511,6 +4564,7 @@ function renderMaster(){
   }
 
   const sorted = sortTasks(tasks, sortMaster);
+  const todayKey = new Date().toISOString().slice(0,10);
 
   if(sorted.length===0){
 
@@ -4528,11 +4582,14 @@ function renderMaster(){
 
     const statuses = parseStatuses(t.status).map(v=>v.toUpperCase());
 
-    const c = STATUS_COLORS[statuses[0]] || "#1f2937";
+    const c = ownerColor(t.owner);
 
     const rowBg = siteColor(p?.site);
 
-    h+=`<tr data-project="${t.projectId}" data-task="${t.id}" style="--site-bg:${rowBg};background:var(--site-bg);">
+    const isToday = !!(t.start && t.end && t.start<=todayKey && t.end>=todayKey);
+    const isLate = !!(t.end && t.end < todayKey);
+    const rowClass = `${isToday ? "today-row " : ""}${isLate ? "late-row" : ""}`.trim();
+    h+=`<tr class="${rowClass}" data-project="${t.projectId}" data-task="${t.id}" style="--site-bg:${rowBg};background:var(--site-bg);">
 
       <td>${p?.site||""}</td>
 
@@ -4542,7 +4599,7 @@ function renderMaster(){
 
       <td class="status-cell"><span class="status-left">${statusDot(statuses[0])}${statusLabels(t.status||"")}</span>${t.owner?ownerBadge(t.owner):""}</td>
 
-      <td>${formatDate(t.start)||""}</td>
+      <td>${formatDate(t.start)||""}${isToday ? `<span class="today-dot" title="En cours aujourd'hui"></span>` : ""}</td>
 
       <td>${formatDate(t.end)||""}</td>
 
@@ -4568,10 +4625,26 @@ function renderMaster(){
 
   if(fb){
 
-    const active = filtersActive() || sortMaster.key!=="project" || sortMaster.dir!=="asc";
+    const active = filtersActive() || sortMaster.key!=="start" || sortMaster.dir!=="asc";
 
     updateBadge(fb, active, "Tri/filtre actif", "Tri par défaut");
 
+  }
+  const siteBadge = el("siteBadge");
+  if(siteBadge){
+    const fp = el("filterProject")?.value || "";
+    if(fp){
+      const proj = state.projects.find(p=>p.id===fp);
+      const site = (proj?.site || "").trim();
+      if(site){
+        siteBadge.textContent = `Site actif : ${site}`;
+        siteBadge.style.display = "inline-flex";
+      }else{
+        siteBadge.style.display = "none";
+      }
+    }else{
+      siteBadge.style.display = "none";
+    }
   }
 
 }
@@ -4592,6 +4665,19 @@ function renderProject(){
   el("projectTitle").textContent = `Projet : ${p.name||"Sans nom"}`;
 
   el("projectSub").textContent = p.site || "Détails • Gantt";
+  updateSitePhoto(p.site || "");
+
+  const projectSummary = el("projectSummary");
+  if(projectSummary){
+    const tasksAll = state.tasks.filter(t=>t.projectId===p.id);
+    const tasksDated = tasksAll.filter(t=>t.start && t.end);
+    const todayKey = new Date().toISOString().slice(0,10);
+    const inProgress = tasksDated.filter(t=>t.start<=todayKey && t.end>=todayKey).length;
+    const minStart = tasksDated.length ? tasksDated.map(t=>t.start).sort()[0] : "";
+    const maxEnd = tasksDated.length ? tasksDated.map(t=>t.end).sort().slice(-1)[0] : "";
+    const endLabel = maxEnd ? formatDate(maxEnd) : "—";
+    projectSummary.textContent = `Résumé : ${tasksAll.length} tâches • ${inProgress} en cours • Fin prévue : ${endLabel}`;
+  }
 
   // métriques projet : durée totale + équivalent heures (6h/j)
 
@@ -4674,7 +4760,7 @@ function renderProject(){
 
     if(inProgress.length===0){
 
-      live.innerHTML = `<span class="live-title">Projet non démarr</span>`;
+      live.innerHTML = `<span class="live-title">Projet non démarré</span>`;
 
     }else{
 
@@ -4684,7 +4770,7 @@ function renderProject(){
 
         const status = parseStatuses(t.status)[0] || "";
 
-        const color = STATUS_COLORS[(status||"").toUpperCase()] || "#475569";
+        const color = ownerColor(t.owner);
 
         const label = STATUSES.find(s=>s.v===status)?.label || status || "En cours";
 
@@ -4710,8 +4796,13 @@ function renderProject(){
     siteSelect.innerHTML = sites.map(s=>`<option value="${s}">${s}</option>`).join("");
     siteSelect.value = p.site || "";
     if(!siteSelect.value && p.site){ siteSelect.value = p.site; }
+    siteSelect.onchange = () => updateSitePhoto(siteSelect.value);
+    updateSitePhoto(siteSelect.value || p.site || "");
   }
-  el("p_constraints").value=p.constraints||"";
+  const constraintsInput = el("p_constraints");
+  if(constraintsInput){
+    constraintsInput.value = p.constraints||"";
+  }
 
 
 
@@ -4856,6 +4947,7 @@ function renderAll(){
   else renderMaster();
 
   updateSidebarTop();
+  updateSidebarScrollState();
 
   applySidebarTopLock();
 
@@ -5227,7 +5319,8 @@ function bind(){
 
     const siteSelect = el("p_site");
     p.site        = siteSelect ? siteSelect.value.trim() : "";
-    p.constraints = el("p_constraints").value.trim();
+    const constraintsInput = el("p_constraints");
+    p.constraints = constraintsInput ? constraintsInput.value.trim() : (p.constraints||"");
 
     renderTabs();
 
@@ -5602,7 +5695,7 @@ function bind(){
 
   el("btnResetSortMaster")?.addEventListener("click", ()=>{
 
-    sortMaster = {key:"project", dir:"asc"};
+    sortMaster = {key:"start", dir:"asc"};
 
     renderMaster();
 
@@ -5650,7 +5743,7 @@ function bind(){
 
   el("btnResetSortProject")?.addEventListener("click", ()=>{
 
-    sortProject = {key:"num", dir:"asc"};
+    sortProject = {key:"start", dir:"asc"};
 
     renderProjectTasks(selectedProjectId);
 
