@@ -462,6 +462,25 @@ const STATUS_COLORS = {
 
 };
 
+const THEMES = [
+  { id:"sable", label:"Sable doux", swatch:["#f2e8d5","#d2b48c"] },
+  { id:"ardoise", label:"Ardoise", swatch:["#94a3b8","#475569"] },
+  { id:"clair", label:"Clair neutre", swatch:["#f8fafc","#e2e8f0"] },
+  { id:"industriel", label:"Industriel sombre", swatch:["#6b7280","#111827"] },
+  { id:"chantier", label:"Chantier orange", swatch:["#f59e0b","#b45309"] },
+  { id:"nuit", label:"Bleu nuit", swatch:["#0ea5e9","#1e3a8a"] },
+  { id:"carbone", label:"Carbone contrasté", swatch:["#1f2937","#0f172a"] },
+  { id:"noir_or", label:"Noir & Or", swatch:["#111111","#f59e0b"] },
+  { id:"noir", label:"Noir absolu", swatch:["#0b0b0b","#f8fafc"] },
+  { id:"gris", label:"Gris profond", swatch:["#374151","#111827"] },
+  { id:"marine", label:"Bleu marine", swatch:["#0f172a","#2563eb"] },
+  { id:"orange_brule", label:"Orange brûlé", swatch:["#9a3412","#f97316"] },
+  { id:"petrole", label:"Vert pétrole", swatch:["#0f766e","#14b8a6"] },
+  { id:"obsidienne", label:"Obsidienne", swatch:["#0a0a0a","#1f2937"] },
+  { id:"acier_bleu", label:"Acier bleu", swatch:["#0b1b2b","#1e3a8a"] },
+  { id:"vert_nuit", label:"Vert nuit", swatch:["#0b1f18","#14532d"] }
+];
+
 
 
 const statusColor = (v)=> STATUS_COLORS[(v||"").toUpperCase()] || "#1f2937";
@@ -657,6 +676,69 @@ function saveUsers(list){
     try{ saveUsersToSupabase(list||[]); }catch(e){}
   }catch(e){}
 }
+
+function getCurrentUserName(){
+  return sessionStorage.getItem("current_user") || "";
+}
+function getCurrentUserRecord(){
+  const name = getCurrentUserName();
+  if(!name) return null;
+  const users = loadUsers();
+  return users.find(u=>u.name===name) || null;
+}
+function applyTheme(themeId){
+  const id = themeId || "sable";
+  document.documentElement.setAttribute("data-theme", id);
+  const grid = el("themeGrid");
+  if(grid){
+    grid.querySelectorAll(".theme-swatch").forEach(n=>{
+      n.classList.toggle("active", n.dataset.theme===id);
+    });
+  }
+}
+function applyThemeForCurrentUser(){
+  const u = getCurrentUserRecord();
+  const theme = (u && u.theme) ? u.theme : "sable";
+  applyTheme(theme);
+}
+function setCurrentUserTheme(themeId){
+  const name = getCurrentUserName();
+  if(!name){
+    applyTheme(themeId);
+    return;
+  }
+  const users = loadUsers();
+  const idx = users.findIndex(u=>u.name===name);
+  if(idx>=0){
+    users[idx].theme = themeId;
+    saveUsers(users);
+  }
+  applyTheme(themeId);
+}
+function initThemePicker(){
+  const grid = el("themeGrid");
+  const picker = el("themePicker");
+  const toggle = el("themeToggle");
+  if(!grid || !picker || !toggle) return;
+  grid.innerHTML = THEMES.map(t=>{
+    const colors = t.swatch || ["#e2e8f0","#94a3b8"];
+    const style = `background:linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%);`;
+    return `<button type="button" class="theme-swatch" data-theme="${t.id}" title="${t.label}" style="${style}"></button>`;
+  }).join("");
+  grid.querySelectorAll(".theme-swatch").forEach(btn=>{
+    btn.addEventListener("click", ()=> setCurrentUserTheme(btn.dataset.theme || "sable"));
+  });
+  toggle.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    picker.classList.toggle("open");
+  });
+  document.addEventListener("click", (e)=>{
+    if(!picker.classList.contains("open")) return;
+    if(picker.contains(e.target)) return;
+    picker.classList.remove("open");
+  });
+  applyThemeForCurrentUser();
+}
 function getCurrentRole(){
   return sessionStorage.getItem("current_role") || "admin";
 }
@@ -673,6 +755,7 @@ function updateRoleUI(){
     const roleLabel = role==="admin" ? "Admin" : "Utilisateur";
     topUser.textContent = `Utilisateur connecté: ${name} - ${roleLabel}`;
   }
+  applyThemeForCurrentUser();
 }
 async function hashPassword(str){
   const enc = new TextEncoder().encode(str || "");
@@ -4986,6 +5069,7 @@ function bind(){
   updateSidebarTop();
   applySidebarTopLock();
   setLockState(isLocked);
+  initThemePicker();
   const switchBtn = el("btnSwitchUser");
   if(switchBtn){
     switchBtn.addEventListener("click", ()=>{
@@ -5033,7 +5117,7 @@ function bind(){
       alert("Email dj existant."); return;
     }
     const hash = await hashPassword(pass);
-    users.push({name, email, role, hash});
+    users.push({name, email, role, hash, theme:"sable"});
     saveUsers(users);
     el("cfg_user_name").value = "";
     el("cfg_user_email").value = "";
