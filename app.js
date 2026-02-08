@@ -5096,16 +5096,16 @@ function bind(){
     if(e.target && e.target.id==="publishModal") closePublishModal();
   });
   el("btnPublishCopy")?.addEventListener("click", async ()=>{
-    const cmd = "publish.bat";
+    const cmd = "GitHub Desktop -> Commit -> Push";
     try{
       if(navigator.clipboard && navigator.clipboard.writeText){
         await navigator.clipboard.writeText(cmd);
-        alert("Commande copiée : publish.bat");
+        alert("Rappel copié : GitHub Desktop -> Commit -> Push");
       }else{
-        prompt("Commande à copier :", cmd);
+        prompt("Rappel à copier :", cmd);
       }
     }catch(e){
-      prompt("Commande à copier :", cmd);
+      prompt("Rappel à copier :", cmd);
     }
   });
 
