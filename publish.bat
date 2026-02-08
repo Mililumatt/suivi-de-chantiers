@@ -1,1 +1,1 @@
- Delete publish.bat
+
