@@ -51,6 +51,8 @@ body{
   height:34px;
   display:inline-flex;
   align-items:center;
+  justify-content:center;
+  line-height:1;
 }
 .topbar .btn,
 .topbar .topbar-lock{
@@ -97,7 +99,7 @@ body{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  line-height:34px;
+  line-height:1;
   padding-top:0;
   padding-bottom:0;
 }
@@ -139,11 +141,20 @@ body{
 }
 .section{margin-bottom:8px;padding:8px;border:1px dashed rgba(0,0,0,.08);border-radius:12px;background:rgba(248,246,241,0.9);}
 .section-title{font-size:14px;font-weight:700;color:#475569;margin-bottom:8px;}
+.section-filters{padding:6px;margin-bottom:6px;}
+.section-filters .section-title{margin-bottom:6px;font-size:13px;}
+.section-filters .label{margin:6px 0 4px;}
+.section-filters .input,
+.section-filters select{padding:6px 8px;font-size:11px;}
+.section-add{padding:6px;margin-bottom:6px;}
+.section-add .section-title{margin-bottom:6px;font-size:13px;}
+.section-add .btn{padding:5px 8px;font-size:10px;}
 .sidebar .section .btn-primary{
   font-size:10px;
   padding:5px 8px;
 }
 .tabs{display:flex;flex-direction:column;gap:3px;}
+.tabs-master{display:flex;flex-direction:column;gap:3px;margin-bottom:6px;}
 .tab{
   padding:4px 8px;
   height:30px;
@@ -161,6 +172,19 @@ body{
   gap:4px;
   box-sizing:border-box;
   box-shadow:0 7px 14px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+.tabs .tab:not(.tab-master),
+.tabs-master .tab:not(.tab-master){
+  border-left:4px solid hsl(var(--tab-hue, 0) 70% 45%) !important;
+  box-shadow:inset 4px 0 0 hsl(var(--tab-hue, 0) 70% 45%), 0 7px 14px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.55) !important;
+}
+
+/* Sidebar: jamais de scroll global */
+.sidebar{
+  overflow:hidden !important;
+}
+.sidebar.sidebar-scroll{
+  overflow:hidden !important;
 }
 .tab .tab-close{
   font-weight:900;
@@ -340,7 +364,12 @@ body{
 }
 .tablewrap.project-tasks{
   max-height:280px; /* ~10 lignes */
-  overflow:auto;
+  overflow:hidden;
+}
+.tabs-scroll{
+  max-height:240px;
+  overflow-y:auto;
+  padding-right:4px;
 }
 .sidebar.sidebar-scroll{
   overflow:auto;

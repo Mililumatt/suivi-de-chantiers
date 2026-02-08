@@ -496,8 +496,8 @@ function updateSidebarTop(){
 function updateSidebarScrollState(){
   const sb = document.querySelector(".sidebar");
   if(!sb) return;
-  const needsScroll = sb.scrollHeight > sb.clientHeight + 2;
-  sb.classList.toggle("sidebar-scroll", needsScroll);
+  // Sidebar ne doit plus scroller : seul le bloc Onglets scrolle
+  sb.classList.remove("sidebar-scroll");
 }
 
 // verrouille la position de la sidebar une fois la mise en page stabilise
@@ -4153,6 +4153,7 @@ function renderFilters(){
 function renderTabs(){
 
   const tabs = el("tabs");
+  const tabsMaster = el("tabsMaster");
 
   if(!tabs) return;
 
@@ -4166,7 +4167,7 @@ function renderTabs(){
 
   };
 
-  let h=`<button class="tab tab-master ${selectedProjectId?"":"active"}" data-tab="MASTER"><span class="tab-icon"></span> Tableau maître</button>`;
+  const masterBtn = `<button class="tab tab-master ${selectedProjectId?"":"active"}" data-tab="MASTER"><span class="tab-icon"></span> Tableau maître</button>`;
 
   const projectsSorted = [...state.projects].sort((a,b)=>{
 
@@ -4186,15 +4187,21 @@ function renderTabs(){
 
   });
 
-  projectsSorted.forEach(p=>{
-
-    h+=`<button class="tab ${selectedProjectId===p.id?"active":""}" data-tab="${p.id}"><span>${p.name||"Projet"}</span><span class="tab-close" data-close="${p.id}" aria-label="Supprimer le projet"></span></button>`;
-
+  let h="";
+  const total = projectsSorted.length || 1;
+  projectsSorted.forEach((p,idx)=>{
+    const hue = 0 + (120 * (idx/(total-1 || 1))); // rouge -> vert
+    h+=`<button class="tab ${selectedProjectId===p.id?"active":""}" data-tab="${p.id}" style="--tab-hue:${hue};"><span>${p.name||"Projet"}</span><span class="tab-close" data-close="${p.id}" aria-label="Supprimer le projet"></span></button>`;
   });
 
+  if(tabsMaster){ tabsMaster.innerHTML = masterBtn; }
   tabs.innerHTML=h;
 
-  tabs.querySelectorAll("button").forEach(btn=>{
+  const allTabs = [
+    ...(tabsMaster ? Array.from(tabsMaster.querySelectorAll("button")) : []),
+    ...Array.from(tabs.querySelectorAll("button"))
+  ];
+  allTabs.forEach(btn=>{
     btn.onclick=()=>{
       const tab=btn.dataset.tab;
       if(tab==="MASTER"){ navigateTo(null, null, true); }
@@ -4796,7 +4803,9 @@ function renderProject(){
     siteSelect.innerHTML = sites.map(s=>`<option value="${s}">${s}</option>`).join("");
     siteSelect.value = p.site || "";
     if(!siteSelect.value && p.site){ siteSelect.value = p.site; }
-    siteSelect.onchange = () => updateSitePhoto(siteSelect.value);
+    const syncPhoto = () => updateSitePhoto(siteSelect.value);
+    siteSelect.onchange = syncPhoto;
+    siteSelect.oninput = syncPhoto;
     updateSitePhoto(siteSelect.value || p.site || "");
   }
   const constraintsInput = el("p_constraints");

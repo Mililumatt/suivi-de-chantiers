@@ -201,10 +201,13 @@
     <aside class="sidebar">
       <div class="section">
         <div class="section-title"><span class="section-title-icon"></span> Onglets</div>
-        <div id="tabs" class="tabs"></div>
+        <div id="tabsMaster" class="tabs-master"></div>
+        <div class="tabs-scroll">
+          <div id="tabs" class="tabs"></div>
+        </div>
       </div>
 
-      <div class="section">
+      <div class="section section-filters">
         <div class="section-title"><span class="section-title-icon"></span> Filtres (tableau maître)</div>
         <label class="label">Projet</label>
         <select class="input" id="filterProject"></select>
@@ -230,7 +233,7 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section section-add">
         <div class="section-title"><span class="section-title-icon"></span> Ajouter</div>
         <button class="btn btn-primary" id="btnAddProject">+ Nouveau projet</button>
         <button class="btn btn-primary" id="btnAddTask">+ Nouvelle tâche</button>
