@@ -370,6 +370,7 @@ let workloadRangeTypeProject = "all";
 let workloadRangeStartProject = "";
 let workloadRangeEndProject = "";
 let workloadRangeYearProject = "";
+let syncMode = "local"; // local | supabase
 const CONFIG_KEY = "dashboard_config_v1";
 const USERS_KEY = "dashboard_users_v1";
 let ganttColVisibility = {
@@ -630,14 +631,18 @@ function closeAllOverlays(){
 function loadConfig(){
   try{
     const raw = localStorage.getItem(CONFIG_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const cfg = raw ? JSON.parse(raw) : {};
+    if(cfg && cfg.syncMode) syncMode = cfg.syncMode;
+    return cfg;
   }catch(e){
     return {};
   }
 }
 function saveConfig(cfg){
   try{
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg||{}));
+    const next = cfg || {};
+    next.syncMode = syncMode;
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
   }catch(e){}
 }
 function loadUsers(){
@@ -654,7 +659,9 @@ function saveUsers(list){
     try{
       if(typeof window.populateLoginUsers === "function") window.populateLoginUsers();
     }catch(e){}
-    try{ saveUsersToSupabase(list||[]); }catch(e){}
+    if(syncMode === "supabase"){
+      try{ saveUsersToSupabase(list||[]); }catch(e){}
+    }
   }catch(e){}
 }
 function getCurrentRole(){
@@ -664,6 +671,11 @@ function updateRoleUI(){
   const role = getCurrentRole();
   const cfgBtn = el("btnConfig");
   if(cfgBtn) cfgBtn.style.display = (!isLocked && role==="admin") ? "inline-flex" : "none";
+  const syncBtn = el("btnSyncMode");
+  if(syncBtn){
+    syncBtn.style.display = (role==="admin") ? "inline-flex" : "none";
+    syncBtn.textContent = syncMode === "supabase" ? "Mode : Supabase" : "Mode : Local";
+  }
   const gear = el("gear-btn");
   const gearWrap = gear ? gear.closest(".gear-wrap") : null;
   if(gearWrap) gearWrap.style.display = role==="admin" ? "flex" : "none";
@@ -2227,7 +2239,9 @@ function saveState(){
 
     // Supabase greffe : APRES sauvegarde locale
 
-    try{ if(window.saveAppStateToSupabase) window.saveAppStateToSupabase(state); }catch(e){}
+    if(syncMode === "supabase"){
+      try{ if(window.saveAppStateToSupabase) window.saveAppStateToSupabase(state); }catch(e){}
+    }
 
   }catch(e){
 
@@ -4918,6 +4932,15 @@ function renderProject(){
 
 }
 
+function openPublishModal(){
+  const modal = el("publishModal");
+  if(modal) modal.classList.remove("hidden");
+}
+function closePublishModal(){
+  const modal = el("publishModal");
+  if(modal) modal.classList.add("hidden");
+}
+
 
 
 function renderAll(){
@@ -5038,7 +5061,9 @@ function bind(){
   el("btnSave")?.addEventListener("click", ()=>{
     if(isLocked) return;
     saveState();
-    try{ saveUsersToSupabase(loadUsers()); }catch(e){}
+    if(syncMode === "supabase"){
+      try{ saveUsersToSupabase(loadUsers()); }catch(e){}
+    }
     // Flux simple : tlchargement d'un JSON  craser manuellement dans le dossier projet.
     downloadBackup();
     flashSaved();
@@ -5047,6 +5072,41 @@ function bind(){
 
     el("btnNewTask")?.classList.remove("btn-armed");
 
+  });
+  el("btnPublishAll")?.addEventListener("click", ()=>{
+    if(isLocked) return;
+    saveState();
+    if(syncMode === "supabase"){
+      try{ saveUsersToSupabase(loadUsers()); }catch(e){}
+    }
+    downloadBackup();
+    flashSaved();
+    renderAll();
+    openPublishModal();
+  });
+  el("btnSyncMode")?.addEventListener("click", ()=>{
+    if(getCurrentRole() !== "admin") return;
+    syncMode = (syncMode === "supabase") ? "local" : "supabase";
+    saveConfig(loadConfig());
+    updateRoleUI();
+    alert(`Mode actuel : ${syncMode === "supabase" ? "Supabase" : "Local"}`);
+  });
+  el("btnPublishClose")?.addEventListener("click", closePublishModal);
+  el("publishModal")?.addEventListener("click",(e)=>{
+    if(e.target && e.target.id==="publishModal") closePublishModal();
+  });
+  el("btnPublishCopy")?.addEventListener("click", async ()=>{
+    const cmd = "publish.bat";
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(cmd);
+        alert("Commande copiée : publish.bat");
+      }else{
+        prompt("Commande à copier :", cmd);
+      }
+    }catch(e){
+      prompt("Commande à copier :", cmd);
+    }
   });
 
   // bouton impression PDF (utilise print.css)
