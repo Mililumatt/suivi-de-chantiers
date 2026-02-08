@@ -129,29 +129,6 @@
       </div>
     </div>
   </div>
-  <div id="publishModal" class="modal hidden" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-title">Publier tout</div>
-      <div class="modal-sub">Sauvegarde locale téléchargée + données Supabase mises à jour.</div>
-      <div class="modal-sub">Étape suivante : ouvrir GitHub Desktop, puis faire <strong>Commit</strong> et <strong>Push</strong>.</div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="btnPublishCopy">Copier rappel</button>
-        <button class="btn btn-primary" id="btnPublishClose">Fermer</button>
-      </div>
-    </div>
-  </div>
-  <div id="modeLocalModal" class="modal hidden" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-title">Mode local</div>
-      <div class="modal-sub">Depuis un site web, le navigateur ne peut pas ouvrir un fichier local automatiquement.</div>
-      <div class="modal-sub">Copie ce lien et colle-le dans la barre d’adresse :</div>
-      <div id="modeLocalLink" class="modal-sub" style="font-weight:700;word-break:break-all;"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="btnCopyLocalLink">Copier le lien</button>
-        <button class="btn btn-primary" id="btnCloseLocalModal">Fermer</button>
-      </div>
-    </div>
-  </div>
   <div id="configModal" class="modal hidden" aria-hidden="true">
     <div class="modal-card" style="min-width:340px;">
       <div class="modal-title">Configuration</div>
@@ -200,8 +177,6 @@
     <div class="topbar-lock" id="topbarLock"></div>
     <div class="actions">
       <button class="btn btn-primary" id="btnSave">Sauvegarder</button>
-      <button class="btn btn-primary" id="btnPublishAll" title="Sauvegarder + préparer la publication">Publier tout</button>
-      <button class="btn btn-ghost" id="btnSyncMode" style="display:none;">Mode : Local</button>
       <button class="btn" id="btnConfig" style="display:none;">Configuration</button>
       <div class="gear-wrap">
         <button id="gear-btn" title="Options accs"></button>

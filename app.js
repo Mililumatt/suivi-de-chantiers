@@ -370,11 +370,8 @@ let workloadRangeTypeProject = "all";
 let workloadRangeStartProject = "";
 let workloadRangeEndProject = "";
 let workloadRangeYearProject = "";
-let syncMode = "local"; // local | supabase
 const CONFIG_KEY = "dashboard_config_v1";
 const USERS_KEY = "dashboard_users_v1";
-const LOCAL_URL = "file:///C:/Users/sebastien.duc/CLOUD/02_ARCHIVAGE%20PERSONNEL/DASHBOARDS/suivi-de-chantiers-clone/suivi-de-chantiers/index.html";
-const GITHUB_URL = "https://mililumatt.github.io/suivi-de-chantiers/";
 let ganttColVisibility = {
 
   masterVendor: true,
@@ -633,20 +630,14 @@ function closeAllOverlays(){
 function loadConfig(){
   try{
     const raw = localStorage.getItem(CONFIG_KEY);
-    const cfg = raw ? JSON.parse(raw) : {};
-    if(cfg && cfg.syncMode) syncMode = cfg.syncMode;
-    const locationMode = window.location.protocol.startsWith("http") ? "supabase" : "local";
-    syncMode = locationMode;
-    return cfg;
+    return raw ? JSON.parse(raw) : {};
   }catch(e){
     return {};
   }
 }
 function saveConfig(cfg){
   try{
-    const next = cfg || {};
-    next.syncMode = syncMode;
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg||{}));
   }catch(e){}
 }
 function loadUsers(){
@@ -663,9 +654,7 @@ function saveUsers(list){
     try{
       if(typeof window.populateLoginUsers === "function") window.populateLoginUsers();
     }catch(e){}
-    if(syncMode === "supabase"){
-      try{ saveUsersToSupabase(list||[]); }catch(e){}
-    }
+    try{ saveUsersToSupabase(list||[]); }catch(e){}
   }catch(e){}
 }
 function getCurrentRole(){
@@ -675,11 +664,6 @@ function updateRoleUI(){
   const role = getCurrentRole();
   const cfgBtn = el("btnConfig");
   if(cfgBtn) cfgBtn.style.display = (!isLocked && role==="admin") ? "inline-flex" : "none";
-  const syncBtn = el("btnSyncMode");
-  if(syncBtn){
-    syncBtn.style.display = (role==="admin") ? "inline-flex" : "none";
-    syncBtn.textContent = syncMode === "supabase" ? "Mode : Hébergé" : "Mode : Local";
-  }
   const gear = el("gear-btn");
   const gearWrap = gear ? gear.closest(".gear-wrap") : null;
   if(gearWrap) gearWrap.style.display = role==="admin" ? "flex" : "none";
@@ -2243,9 +2227,7 @@ function saveState(){
 
     // Supabase greffe : APRES sauvegarde locale
 
-    if(syncMode === "supabase"){
-      try{ if(window.saveAppStateToSupabase) window.saveAppStateToSupabase(state); }catch(e){}
-    }
+    try{ if(window.saveAppStateToSupabase) window.saveAppStateToSupabase(state); }catch(e){}
 
   }catch(e){
 
@@ -4936,25 +4918,6 @@ function renderProject(){
 
 }
 
-function openPublishModal(){
-  const modal = el("publishModal");
-  if(modal) modal.classList.remove("hidden");
-}
-function closePublishModal(){
-  const modal = el("publishModal");
-  if(modal) modal.classList.add("hidden");
-}
-function openLocalModeModal(link){
-  const modal = el("modeLocalModal");
-  const linkEl = el("modeLocalLink");
-  if(linkEl) linkEl.textContent = link || "";
-  if(modal) modal.classList.remove("hidden");
-}
-function closeLocalModeModal(){
-  const modal = el("modeLocalModal");
-  if(modal) modal.classList.add("hidden");
-}
-
 
 
 function renderAll(){
@@ -5075,9 +5038,7 @@ function bind(){
   el("btnSave")?.addEventListener("click", ()=>{
     if(isLocked) return;
     saveState();
-    if(syncMode === "supabase"){
-      try{ saveUsersToSupabase(loadUsers()); }catch(e){}
-    }
+    try{ saveUsersToSupabase(loadUsers()); }catch(e){}
     // Flux simple : tlchargement d'un JSON  craser manuellement dans le dossier projet.
     downloadBackup();
     flashSaved();
@@ -5086,68 +5047,6 @@ function bind(){
 
     el("btnNewTask")?.classList.remove("btn-armed");
 
-  });
-  el("btnPublishAll")?.addEventListener("click", ()=>{
-    if(isLocked) return;
-    saveState();
-    if(syncMode === "supabase"){
-      try{ saveUsersToSupabase(loadUsers()); }catch(e){}
-    }
-    downloadBackup();
-    flashSaved();
-    renderAll();
-    openPublishModal();
-  });
-  el("btnSyncMode")?.addEventListener("click", ()=>{
-    if(getCurrentRole() !== "admin") return;
-    syncMode = (syncMode === "supabase") ? "local" : "supabase";
-    const cfg = loadConfig();
-    cfg.syncMode = syncMode;
-    saveConfig(cfg);
-    updateRoleUI();
-    const targetUrl = (syncMode === "supabase") ? GITHUB_URL : LOCAL_URL;
-    const isTargetFile = targetUrl.startsWith("file:");
-    const isCurrentWeb = window.location.protocol.startsWith("http");
-    if(isTargetFile && isCurrentWeb){
-      openLocalModeModal(targetUrl);
-      return;
-    }
-    window.location.href = targetUrl;
-  });
-  el("btnPublishClose")?.addEventListener("click", closePublishModal);
-  el("btnCloseLocalModal")?.addEventListener("click", closeLocalModeModal);
-  el("modeLocalModal")?.addEventListener("click",(e)=>{
-    if(e.target && e.target.id==="modeLocalModal") closeLocalModeModal();
-  });
-  el("btnCopyLocalLink")?.addEventListener("click", async ()=>{
-    const link = el("modeLocalLink")?.textContent || "";
-    if(!link) return;
-    try{
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        await navigator.clipboard.writeText(link);
-        alert("Lien local copié.");
-      }else{
-        prompt("Lien local :", link);
-      }
-    }catch(e){
-      prompt("Lien local :", link);
-    }
-  });
-  el("publishModal")?.addEventListener("click",(e)=>{
-    if(e.target && e.target.id==="publishModal") closePublishModal();
-  });
-  el("btnPublishCopy")?.addEventListener("click", async ()=>{
-    const cmd = "GitHub Desktop -> Commit -> Push";
-    try{
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        await navigator.clipboard.writeText(cmd);
-        alert("Rappel copié : GitHub Desktop -> Commit -> Push");
-      }else{
-        prompt("Rappel à copier :", cmd);
-      }
-    }catch(e){
-      prompt("Rappel à copier :", cmd);
-    }
   });
 
   // bouton impression PDF (utilise print.css)
