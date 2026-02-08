@@ -373,6 +373,8 @@ let workloadRangeYearProject = "";
 let syncMode = "local"; // local | supabase
 const CONFIG_KEY = "dashboard_config_v1";
 const USERS_KEY = "dashboard_users_v1";
+const LOCAL_URL = "file:///C:/Users/sebastien.duc/CLOUD/02_ARCHIVAGE%20PERSONNEL/DASHBOARDS/suivi-de-chantiers-clone/suivi-de-chantiers/index.html";
+const GITHUB_URL = "https://mililumatt.github.io/suivi-de-chantiers/";
 let ganttColVisibility = {
 
   masterVendor: true,
@@ -633,6 +635,8 @@ function loadConfig(){
     const raw = localStorage.getItem(CONFIG_KEY);
     const cfg = raw ? JSON.parse(raw) : {};
     if(cfg && cfg.syncMode) syncMode = cfg.syncMode;
+    const locationMode = window.location.protocol.startsWith("http") ? "supabase" : "local";
+    syncMode = locationMode;
     return cfg;
   }catch(e){
     return {};
@@ -674,7 +678,7 @@ function updateRoleUI(){
   const syncBtn = el("btnSyncMode");
   if(syncBtn){
     syncBtn.style.display = (role==="admin") ? "inline-flex" : "none";
-    syncBtn.textContent = syncMode === "supabase" ? "Mode : Supabase" : "Mode : Local";
+    syncBtn.textContent = syncMode === "supabase" ? "Mode : Hébergé" : "Mode : Local";
   }
   const gear = el("gear-btn");
   const gearWrap = gear ? gear.closest(".gear-wrap") : null;
@@ -4940,6 +4944,16 @@ function closePublishModal(){
   const modal = el("publishModal");
   if(modal) modal.classList.add("hidden");
 }
+function openLocalModeModal(link){
+  const modal = el("modeLocalModal");
+  const linkEl = el("modeLocalLink");
+  if(linkEl) linkEl.textContent = link || "";
+  if(modal) modal.classList.remove("hidden");
+}
+function closeLocalModeModal(){
+  const modal = el("modeLocalModal");
+  if(modal) modal.classList.add("hidden");
+}
 
 
 
@@ -5087,11 +5101,38 @@ function bind(){
   el("btnSyncMode")?.addEventListener("click", ()=>{
     if(getCurrentRole() !== "admin") return;
     syncMode = (syncMode === "supabase") ? "local" : "supabase";
-    saveConfig(loadConfig());
+    const cfg = loadConfig();
+    cfg.syncMode = syncMode;
+    saveConfig(cfg);
     updateRoleUI();
-    alert(`Mode actuel : ${syncMode === "supabase" ? "Supabase" : "Local"}`);
+    const targetUrl = (syncMode === "supabase") ? GITHUB_URL : LOCAL_URL;
+    const isTargetFile = targetUrl.startsWith("file:");
+    const isCurrentWeb = window.location.protocol.startsWith("http");
+    if(isTargetFile && isCurrentWeb){
+      openLocalModeModal(targetUrl);
+      return;
+    }
+    window.location.href = targetUrl;
   });
   el("btnPublishClose")?.addEventListener("click", closePublishModal);
+  el("btnCloseLocalModal")?.addEventListener("click", closeLocalModeModal);
+  el("modeLocalModal")?.addEventListener("click",(e)=>{
+    if(e.target && e.target.id==="modeLocalModal") closeLocalModeModal();
+  });
+  el("btnCopyLocalLink")?.addEventListener("click", async ()=>{
+    const link = el("modeLocalLink")?.textContent || "";
+    if(!link) return;
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(link);
+        alert("Lien local copié.");
+      }else{
+        prompt("Lien local :", link);
+      }
+    }catch(e){
+      prompt("Lien local :", link);
+    }
+  });
   el("publishModal")?.addEventListener("click",(e)=>{
     if(e.target && e.target.id==="publishModal") closePublishModal();
   });
